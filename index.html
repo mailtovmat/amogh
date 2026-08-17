@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
   <title>Amogh's College Application Tracker</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -15,7 +16,20 @@
     .stat-card { text-align: center; min-width: 90px; }
     .stat-card .num { font-size: 2rem; font-weight: 700; }
     .stat-card .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-top: 0.2rem; }
-    #filters { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem 1.5rem; background: #fff; border-bottom: 1px solid #e4e6f0; }
+
+    .section-title { max-width: 1200px; margin: 1.8rem auto 0.6rem; padding: 0 1.5rem; font-size: 0.95rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.05em; }
+    .panel-wrap { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .panel { background: #fff; border: 1px solid #e4e6f0; border-radius: 12px; padding: 1rem 1.2rem; }
+    .panel h3 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 0.7rem; }
+    .panel ul { list-style: none; }
+    .panel li { font-size: 0.85rem; padding: 0.45rem 0; border-top: 1px solid #f0f0f5; line-height: 1.4; }
+    .panel li:first-child { border-top: none; }
+    .panel .who { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6e76a8; background: #eef0f7; border-radius: 10px; padding: 0.1rem 0.5rem; margin-right: 0.4rem; }
+    .panel .due { float: right; font-size: 0.72rem; color: #b06500; font-weight: 600; }
+    .panel.overdue .due { color: #c0392b; }
+    .panel .note { font-size: 0.78rem; color: #888; margin-top: 0.6rem; line-height: 1.4; }
+
+    #filters { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem 1.5rem; background: #fff; border-bottom: 1px solid #e4e6f0; margin-top: 1.5rem; }
     .filter-btn { padding: 0.3rem 0.9rem; border: 1.5px solid #dde0ee; border-radius: 20px; background: #fff; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; }
     .filter-btn:hover, .filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
     #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
@@ -39,6 +53,7 @@
     .deadline.soon { color: #c05000; }
     .deadline.ok { color: #1a7d3e; }
     .deadline.past { color: #888; text-decoration: line-through; }
+    .deadline.tbd { color: #999; font-style: italic; }
     .notes { font-size: 0.8rem; color: #666; line-height: 1.5; border-top: 1px solid #f0f0f5; margin-top: 0.7rem; padding-top: 0.7rem; }
     #empty { display: none; text-align: center; padding: 4rem 1rem; color: #aaa; grid-column: 1 / -1; }
     footer { text-align: center; font-size: 0.75rem; color: #bbb; padding: 2rem 1rem; }
@@ -50,22 +65,46 @@
 {
   "meta": {
     "studentName": "Amogh",
-    "cycle": "Class of 2029",
+    "cycle": "Class of 2027 — applying autumn 2026 for Fall 2027 entry",
     "lastUpdated": "2026-08-17",
-    "updatedBy": "Initial setup"
+    "updatedBy": "Cowork — vault sync"
   },
   "applications": [
-    {
-      "id": "sample-001",
-      "school": "Sample University",
-      "location": "City, ST",
-      "type": "Reach",
-      "status": "planning",
-      "deadline": "2027-01-01",
-      "appType": "Regular Decision",
-      "notes": "Placeholder - replace with Amogh's actual schools."
-    }
-  ]
+    {"id": "amg-01", "school": "MIT", "location": "Cambridge, Massachusetts", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created. SAT required by MIT — sitting 22 Aug 2026, scores 4 Sep."},
+    {"id": "amg-02", "school": "University of Pennsylvania", "location": "Philadelphia, Pennsylvania", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-03", "school": "Johns Hopkins", "location": "Baltimore, Maryland", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-04", "school": "Carnegie Mellon", "location": "Pittsburgh, Pennsylvania", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "Admits by college/major — major choice cannot be changed later (OQ-01/B-09). Common App account not yet created."},
+    {"id": "amg-05", "school": "Tufts", "location": "Medford, Massachusetts", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-06", "school": "Georgia Tech", "location": "Atlanta, Georgia", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "Admits by college/major — major choice cannot be changed later (OQ-01/B-09). Common App account not yet created."},
+    {"id": "amg-07", "school": "Northeastern", "location": "Boston, Massachusetts", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-08", "school": "Virginia Tech", "location": "Blacksburg, Virginia", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-09", "school": "Rutgers–New Brunswick", "location": "New Brunswick, New Jersey", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-10", "school": "RPI", "location": "Troy, New York", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
+    {"id": "amg-11", "school": "University of Illinois Urbana-Champaign", "location": "Champaign, Illinois", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "Admits by college/major — major choice cannot be changed later (OQ-01/B-09). Common App account not yet created."},
+    {"id": "amg-12", "school": "University of Cambridge", "location": "Cambridge, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course (Chemical vs Aero/Mech) NOT yet locked — blocks ESAT registration and this UCAS choice (AMG-GEN-ADM-01, due 24 Aug). Interviews first 3 weeks of Dec, not optional."},
+    {"id": "amg-13", "school": "Imperial College London", "location": "London, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked. ESAT required, registration closes 28 Sep."},
+    {"id": "amg-14", "school": "University of Manchester", "location": "Manchester, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked."},
+    {"id": "amg-15", "school": "University College London", "location": "London, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked. ESAT required, registration closes 28 Sep."},
+    {"id": "amg-16", "school": "University of Leeds", "location": "Leeds, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked."}
+  ],
+  "status": {
+    "overdue": [
+      {"item": "Request counselor + teacher LORs", "who": "amogh", "wasDue": "2026-08-15"},
+      {"item": "Common App account setup + profile", "who": "amogh", "wasDue": "2026-08-15"}
+    ],
+    "thisWeek": [
+      {"item": "Ask two teachers + counselor for recommendations", "who": "amogh", "due": "2026-08-19"},
+      {"item": "Create Common App account, add 11 confirmed US schools", "who": "amogh", "due": "2026-08-19"},
+      {"item": "Decide Chemical vs Aerospace/Mechanical Engineering", "who": "amogh", "due": "2026-08-24"},
+      {"item": "Check whether Amogh has a US SSN", "who": "parent", "due": "2026-08-20"},
+      {"item": "Decide the UK question — are the five UK schools real?", "who": "parent", "due": "2026-08-24"},
+      {"item": "Record existing SAT score + section split (total: 1510)", "who": "parent", "due": "2026-08-19"},
+      {"item": "Decide the SAT retake (3 Oct sitting, reg. closes 18 Sep)", "who": "parent", "due": "2026-08-26"},
+      {"item": "Email counselor: Common App + UCAS reference capability", "who": "parent", "due": "2026-08-19"},
+      {"item": "Create FSA IDs at studentaid.gov (after SSN confirmed)", "who": "parent", "due": "2026-08-22"}
+    ],
+    "note": "16 schools confirmed “Yes” are shown below. 22 more are marked add / ?? / Not sure on the source university list and are deliberately NOT shown here until confirmed (see OPEN-QUESTIONS OQ-04 in the vault)."
+  }
 }
 </script>
 <!-- END COWORK AGENT DATA SECTION -->
@@ -80,22 +119,37 @@
   <div class="stat-card"><div class="num" id="s-accepted">0</div><div class="lbl">Accepted</div></div>
   <div class="stat-card"><div class="num" id="s-pending">0</div><div class="lbl">Pending</div></div>
 </div>
+
+<div class="section-title">Status</div>
+<div class="panel-wrap">
+  <div class="panel overdue">
+    <h3>Overdue</h3>
+    <ul id="p-overdue"></ul>
+  </div>
+  <div class="panel">
+    <h3>This Week (17&ndash;24 Aug)</h3>
+    <ul id="p-thisweek"></ul>
+  </div>
+  <div class="panel">
+    <h3>School List</h3>
+    <div class="note" id="p-note"></div>
+  </div>
+</div>
+
 <div id="filters">
   <button class="filter-btn active" data-filter="all">All</button>
-  <button class="filter-btn" data-filter="reach">Reach</button>
-  <button class="filter-btn" data-filter="match">Match</button>
-  <button class="filter-btn" data-filter="safety">Safety</button>
-  <button class="filter-btn" data-filter="accepted">Accepted</button>
-  <button class="filter-btn" data-filter="submitted">Submitted</button>
   <button class="filter-btn" data-filter="planning">Planning</button>
+  <button class="filter-btn" data-filter="in-progress">In Progress</button>
+  <button class="filter-btn" data-filter="submitted">Submitted</button>
+  <button class="filter-btn" data-filter="accepted">Accepted</button>
 </div>
 <div id="grid"><div id="empty">No applications match this filter.</div></div>
-<footer>Updated by Cowork · <span id="footer-date"></span></footer>
+<footer>Updated by Cowork &middot; <span id="footer-date"></span></footer>
 <script>
 (function(){
   var raw=document.getElementById('college-data-store').textContent;
   var data=JSON.parse(raw);
-  var meta=data.meta, apps=data.applications;
+  var meta=data.meta, apps=data.applications, status=data.status||{};
   document.getElementById('page-title').textContent=(meta.studentName||'Student')+"'s College Application Tracker";
   document.getElementById('page-subtitle').textContent=meta.cycle||'';
   document.getElementById('last-updated').textContent='Last updated: '+(meta.lastUpdated||'-')+(meta.updatedBy?'  ·  '+meta.updatedBy:'');
@@ -108,26 +162,34 @@
   document.getElementById('s-submitted').textContent=apps.filter(function(a){return SUB.indexOf(a.status)>-1;}).length;
   document.getElementById('s-accepted').textContent=apps.filter(function(a){return a.status==='accepted'||a.status==='enrolled';}).length;
   document.getElementById('s-pending').textContent=apps.filter(function(a){return PEN.indexOf(a.status)>-1;}).length;
-  function dc(d){if(!d)return'';var dt=new Date(d),now=new Date();if(dt<now)return'past';return((dt-now)/864e5)<30?'soon':'ok';}
-  function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function dc(d){if(!d)return'tbd';var dt=new Date(d),now=new Date();if(dt<now)return'past';return((dt-now)/864e5)<30?'soon':'ok';}
+  function fd(d){if(!d)return'TBD';return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+
+  var ol=document.getElementById('p-overdue');
+  (status.overdue||[]).forEach(function(o){
+    var li=document.createElement('li');
+    li.innerHTML='<span class="who">'+esc(o.who)+'</span>'+esc(o.item)+'<span class="due">was due '+fd(o.wasDue)+'</span>';
+    ol.appendChild(li);
+  });
+  var tw=document.getElementById('p-thisweek');
+  (status.thisWeek||[]).forEach(function(o){
+    var li=document.createElement('li');
+    li.innerHTML='<span class="who">'+esc(o.who)+'</span>'+esc(o.item)+'<span class="due">due '+fd(o.due)+'</span>';
+    tw.appendChild(li);
+  });
+  document.getElementById('p-note').textContent=status.note||'';
+
   var grid=document.getElementById('grid');
   var empty=document.getElementById('empty');
   function render(f){
     Array.from(grid.querySelectorAll('.card')).forEach(function(c){c.remove();});
-    var filtered=apps.filter(function(a){
-      if(f==='all')return true;
-      if(f==='reach')return(a.type||'').toLowerCase()==='reach';
-      if(f==='match')return(a.type||'').toLowerCase()==='match';
-      if(f==='safety')return(a.type||'').toLowerCase()==='safety';
-      if(f==='accepted')return a.status==='accepted'||a.status==='enrolled';
-      return a.status===f;
-    });
+    var filtered=apps.filter(function(a){ return f==='all' || a.status===f; });
     empty.style.display=filtered.length===0?'block':'none';
     filtered.forEach(function(app){
       var card=document.createElement('div');
       card.className='card';
-      card.innerHTML='<div class="card-header"><div><h2>'+esc(app.school)+'</h2>'+(app.location?'<div class="location">'+esc(app.location)+'</div>':'')+'</div><span class="badge '+(BADGE[app.status]||'badge-planning')+'">'+esc(LABEL[app.status]||app.status)+'</span></div><div class="card-meta">'+(app.type?'<span data-icon="target">'+esc(app.type)+'</span>':'')+(app.appType?'<span data-icon="doc">'+esc(app.appType)+'</span>':'')+'</div>'+(app.deadline?'<div class="deadline '+dc(app.deadline)+'">Deadline: '+fd(app.deadline)+'</div>':'')+(app.notes?'<div class="notes">'+esc(app.notes)+'</div>':'');
+      card.innerHTML='<div class="card-header"><div><h2>'+esc(app.school)+'</h2>'+(app.location?'<div class="location">'+esc(app.location)+'</div>':'')+'</div><span class="badge '+(BADGE[app.status]||'badge-planning')+'">'+esc(LABEL[app.status]||app.status)+'</span></div><div class="card-meta">'+(app.appType?'<span data-icon="doc">'+esc(app.appType)+'</span>':'')+'</div><div class="deadline '+dc(app.deadline)+'">Deadline: '+fd(app.deadline)+'</div>'+(app.notes?'<div class="notes">'+esc(app.notes)+'</div>':'');
       grid.appendChild(card);
     });
   }
