@@ -1,207 +1,680 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="robots" content="noindex, nofollow, noarchive" />
-  <title>Amogh's College Application Tracker</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f6fa; color: #1a1a2e; min-height: 100vh; }
-    header { background: #1a1a2e; color: #fff; padding: 2rem 1.5rem 1.5rem; text-align: center; }
-    header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px; }
-    header p  { margin-top: 0.4rem; font-size: 0.95rem; opacity: 0.65; }
-    #last-updated { text-align: center; font-size: 0.8rem; color: #888; padding: 0.6rem; background: #eef0f7; border-bottom: 1px solid #dde0ee; }
-    #stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; padding: 1.5rem; background: #fff; border-bottom: 1px solid #e4e6f0; }
-    .stat-card { text-align: center; min-width: 90px; }
-    .stat-card .num { font-size: 2rem; font-weight: 700; }
-    .stat-card .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.55; margin-top: 0.2rem; }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, max-snippet:0, max-image-preview:none">
+<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
+<meta name="google" content="nositelinkssearchbox">
+<meta name="AdsBot-Google" content="noindex">
+<meta name="Google-Extended" content="noindex, nofollow">
+<meta name="GPTBot" content="noindex, nofollow">
+<meta name="ClaudeBot" content="noindex, nofollow">
+<meta name="CCBot" content="noindex, nofollow">
+<meta name="PerplexityBot" content="noindex, nofollow">
+<meta name="Applebot-Extended" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Amogh — Admissions Dashboard</title>
+<style>
+:root{
+  color-scheme: light;
+  --plane:#f9f9f7; --surface:#fcfcfb;
+  --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s7:#4a3aa7;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --wash:rgba(11,11,11,0.035);
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19;
+  --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s7:#9085e9;
+  --wash:rgba(255,255,255,0.05);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.5;}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 20px 80px}
 
-    .section-title { max-width: 1200px; margin: 1.8rem auto 0.6rem; padding: 0 1.5rem; font-size: 0.95rem; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.05em; }
-    .panel-wrap { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
-    .panel { background: #fff; border: 1px solid #e4e6f0; border-radius: 12px; padding: 1rem 1.2rem; }
-    .panel h3 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 0.7rem; }
-    .panel ul { list-style: none; }
-    .panel li { font-size: 0.85rem; padding: 0.45rem 0; border-top: 1px solid #f0f0f5; line-height: 1.4; }
-    .panel li:first-child { border-top: none; }
-    .panel .who { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6e76a8; background: #eef0f7; border-radius: 10px; padding: 0.1rem 0.5rem; margin-right: 0.4rem; }
-    .panel .due { float: right; font-size: 0.72rem; color: #b06500; font-weight: 600; }
-    .panel.overdue .due { color: #c0392b; }
-    .panel .note { font-size: 0.78rem; color: #888; margin-top: 0.6rem; line-height: 1.4; }
+/* header */
+header{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:4px}
+h1{font-size:20px;margin:0;letter-spacing:-0.01em}
+.sub{color:var(--ink2);font-size:13px;margin-top:2px}
+.spacer{flex:1}
+.btn{background:var(--surface);border:1px solid var(--ring);border-radius:8px;
+  padding:6px 12px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--wash)}
 
-    #filters { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem 1.5rem; background: #fff; border-bottom: 1px solid #e4e6f0; margin-top: 1.5rem; }
-    .filter-btn { padding: 0.3rem 0.9rem; border: 1.5px solid #dde0ee; border-radius: 20px; background: #fff; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; }
-    .filter-btn:hover, .filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
-    #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; padding: 1.5rem; max-width: 1200px; margin: 0 auto; }
-    .card { background: #fff; border-radius: 12px; border: 1px solid #e4e6f0; padding: 1.2rem 1.3rem; transition: transform 0.15s, box-shadow 0.15s; }
-    .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
-    .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.7rem; }
-    .card-header h2 { font-size: 1rem; font-weight: 700; line-height: 1.3; }
-    .card-header .location { font-size: 0.78rem; opacity: 0.5; margin-top: 0.15rem; }
-    .badge { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.25rem 0.6rem; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
-    .badge-planning { background: #eef0f7; color: #6e76a8; }
-    .badge-in-progress { background: #fff4e5; color: #b06500; }
-    .badge-submitted { background: #e5f4ff; color: #005fb8; }
-    .badge-deferred { background: #f0f0f0; color: #666; }
-    .badge-waitlisted { background: #fff8e1; color: #8a6000; }
-    .badge-accepted { background: #e6f9ee; color: #1a7d3e; }
-    .badge-rejected { background: #fdecea; color: #b91c1c; }
-    .badge-enrolled { background: #1a1a2e; color: #fff; }
-    .card-meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; font-size: 0.8rem; color: #555; margin-bottom: 0.6rem; }
-    .card-meta span::before { content: attr(data-icon) " "; }
-    .deadline { font-size: 0.78rem; font-weight: 600; }
-    .deadline.soon { color: #c05000; }
-    .deadline.ok { color: #1a7d3e; }
-    .deadline.past { color: #888; text-decoration: line-through; }
-    .deadline.tbd { color: #999; font-style: italic; }
-    .notes { font-size: 0.8rem; color: #666; line-height: 1.5; border-top: 1px solid #f0f0f5; margin-top: 0.7rem; padding-top: 0.7rem; }
-    #empty { display: none; text-align: center; padding: 4rem 1rem; color: #aaa; grid-column: 1 / -1; }
-    footer { text-align: center; font-size: 0.75rem; color: #bbb; padding: 2rem 1rem; }
-  </style>
+/* tabs */
+nav{display:flex;gap:2px;margin:18px 0 20px;border-bottom:1px solid var(--grid);flex-wrap:wrap}
+nav button{background:none;border:0;border-bottom:2px solid transparent;padding:9px 14px;
+  font:inherit;font-size:14px;color:var(--ink2);cursor:pointer;margin-bottom:-1px}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--s1);font-weight:600}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:24px}
+.tile{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:14px 16px;
+  display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden}
+.tile .cap{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.tile .val{font-size:30px;font-weight:650;letter-spacing:-0.02em;line-height:1.1;margin-top:4px}
+.tile .unit{font-size:13px;font-weight:400;color:var(--ink2);margin-left:4px}
+.tile .note{font-size:12.5px;color:var(--ink2);margin-top:3px}
+.tile .bar{position:absolute;left:0;top:0;bottom:0;width:3px}
+.tile.parked{opacity:.62}
+.tile.parked .val{font-size:22px}
+
+/* generic card */
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:12px;margin-bottom:16px;overflow:hidden}
+.card > h2{font-size:14px;margin:0;padding:12px 16px;border-bottom:1px solid var(--grid);
+  display:flex;align-items:center;gap:8px;letter-spacing:-0.005em}
+.card > h2 .count{color:var(--muted);font-weight:400;font-size:13px}
+.card .body{padding:4px 0}
+
+/* task rows */
+.task{display:grid;grid-template-columns:20px 1fr auto;gap:12px;padding:11px 16px;
+  border-bottom:1px solid var(--grid);align-items:start}
+.task:last-child{border-bottom:0}
+.task:hover{background:var(--wash)}
+.task .chk{width:15px;height:15px;border:1.5px solid var(--axis);border-radius:4px;margin-top:3px;cursor:pointer;flex:none}
+.task.done .chk{background:var(--good);border-color:var(--good)}
+.task.done .t{text-decoration:line-through;color:var(--muted)}
+.task .t{font-size:14px}
+.task .meta{font-size:12.5px;color:var(--ink2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.task .why{font-size:12.5px;color:var(--muted);margin-top:4px;max-width:78ch}
+.task .right{text-align:right;white-space:nowrap;padding-top:1px}
+.due{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.days{font-size:12.5px;font-weight:650;font-variant-numeric:tabular-nums}
+.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--muted)}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  padding:2px 8px;border-radius:999px;border:1px solid var(--ring);background:var(--wash);color:var(--ink2);
+  white-space:nowrap}
+.chip .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.chip.owner-parent .dot{background:var(--s1)}
+.chip.owner-amogh .dot{background:var(--s3)}
+.chip.owner-counselor .dot{background:var(--s4)}
+.chip.owner-school .dot{background:var(--s7)}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:650;padding:2px 8px;
+  border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.st.crit{color:#fff;background:var(--crit)}
+.st.warn{color:#3a2a00;background:var(--warn)}
+.st.serious{color:#2b1206;background:var(--serious)}
+.st.good{color:#fff;background:var(--good)}
+.st.neutral{color:var(--ink2);background:var(--wash);border-color:var(--ring)}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filters .lab{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-right:2px}
+.pill{background:var(--surface);border:1px solid var(--ring);border-radius:999px;padding:5px 12px;
+  font:inherit;font-size:12.5px;color:var(--ink2);cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+/* timeline */
+.tl{padding:16px;overflow-x:auto}
+.tlinner{min-width:920px}
+.tlhead{display:grid;grid-template-columns:156px 1fr;gap:12px;margin-bottom:6px}
+.months{display:grid;grid-template-columns:repeat(8,1fr);font-size:11.5px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.months div{border-left:1px solid var(--grid);padding-left:6px}
+.lane{display:grid;grid-template-columns:156px 1fr;gap:12px;align-items:center;margin-bottom:7px}
+.laneName{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.laneName .sw{width:9px;height:9px;border-radius:2px;flex:none}
+.track{position:relative;height:26px;background:linear-gradient(to right,var(--grid) 1px,transparent 1px);
+  background-size:12.5% 100%;border-radius:4px}
+.band{position:absolute;top:3px;height:20px;border-radius:4px;font-size:11px;line-height:20px;
+  padding:0 7px;color:#fff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:2px solid var(--surface)}
+.mk{position:absolute;top:0;height:26px;width:2px;background:var(--crit);opacity:.55}
+/* dedicated cutoff rail so labels never collide with bands */
+.rail{display:grid;grid-template-columns:156px 1fr;gap:12px;align-items:end;margin-bottom:4px}
+.railName{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.railTrack{position:relative;height:56px}
+.cut{position:absolute;bottom:0;width:2px;background:var(--crit);height:14px}
+.cutL{position:absolute;font-size:10.5px;font-weight:700;color:var(--crit);white-space:nowrap;
+  transform:translateX(-50%);background:var(--surface);padding:0 3px;border-radius:3px;line-height:1.25}
+.cutL.parked{color:var(--muted);font-weight:600}
+.cut.parked{background:var(--muted)}
+.cutStem{position:absolute;width:1px;background:var(--grid)}
+.freeze{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,
+  var(--wash),var(--wash) 5px,transparent 5px,transparent 10px);border-left:1px dashed var(--axis);
+  border-right:1px dashed var(--axis)}
+.parkedLane{opacity:.45}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  font-weight:600;padding:9px 12px;border-bottom:1px solid var(--grid);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--grid);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--wash)}
+td.num{font-variant-numeric:tabular-nums}
+.tbwrap{overflow-x:auto}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);padding:10px 16px 14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+.note{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--s4);
+  border-radius:8px;padding:12px 16px;font-size:13px;color:var(--ink2);margin-bottom:16px}
+.note strong{color:var(--ink)}
+footer{margin-top:28px;padding-top:16px;border-top:1px solid var(--grid);font-size:12px;color:var(--muted)}
+a{color:var(--s1)}
+.hide{display:none !important}
+@media (max-width:640px){
+  .task{grid-template-columns:20px 1fr}
+  .task .right{grid-column:2;text-align:left;padding-top:4px}
+  .tile .val{font-size:26px}
+}
+</style>
 </head>
 <body>
-<!-- COWORK AGENT DATA SECTION - EDIT ONLY THIS BLOCK -->
-<script id="college-data-store" type="application/json">
-{
-  "meta": {
-    "studentName": "Amogh",
-    "cycle": "Class of 2027 — applying autumn 2026 for Fall 2027 entry",
-    "lastUpdated": "2026-08-17",
-    "updatedBy": "Cowork — vault sync"
-  },
-  "applications": [
-    {"id": "amg-01", "school": "MIT", "location": "Cambridge, Massachusetts", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created. SAT required by MIT — sitting 22 Aug 2026, scores 4 Sep."},
-    {"id": "amg-02", "school": "University of Pennsylvania", "location": "Philadelphia, Pennsylvania", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-03", "school": "Johns Hopkins", "location": "Baltimore, Maryland", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-04", "school": "Carnegie Mellon", "location": "Pittsburgh, Pennsylvania", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "Admits by college/major — major choice cannot be changed later (OQ-01/B-09). Common App account not yet created."},
-    {"id": "amg-05", "school": "Tufts", "location": "Medford, Massachusetts", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-06", "school": "Georgia Tech", "location": "Atlanta, Georgia", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "Admits by college/major — major choice cannot be changed later (OQ-01/B-09). Common App account not yet created."},
-    {"id": "amg-07", "school": "Northeastern", "location": "Boston, Massachusetts", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-08", "school": "Virginia Tech", "location": "Blacksburg, Virginia", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-09", "school": "Rutgers–New Brunswick", "location": "New Brunswick, New Jersey", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-10", "school": "RPI", "location": "Troy, New York", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "US: application round (EA/RD) and exact deadline not yet decided. Common App account not yet created."},
-    {"id": "amg-11", "school": "University of Illinois Urbana-Champaign", "location": "Champaign, Illinois", "type": "", "status": "planning", "deadline": "", "appType": "TBD-VERIFY", "notes": "Admits by college/major — major choice cannot be changed later (OQ-01/B-09). Common App account not yet created."},
-    {"id": "amg-12", "school": "University of Cambridge", "location": "Cambridge, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course (Chemical vs Aero/Mech) NOT yet locked — blocks ESAT registration and this UCAS choice (AMG-GEN-ADM-01, due 24 Aug). Interviews first 3 weeks of Dec, not optional."},
-    {"id": "amg-13", "school": "Imperial College London", "location": "London, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked. ESAT required, registration closes 28 Sep."},
-    {"id": "amg-14", "school": "University of Manchester", "location": "Manchester, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked."},
-    {"id": "amg-15", "school": "University College London", "location": "London, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked. ESAT required, registration closes 28 Sep."},
-    {"id": "amg-16", "school": "University of Leeds", "location": "Leeds, England", "type": "", "status": "planning", "deadline": "2026-10-15", "appType": "UCAS", "notes": "UCAS closes 15 Oct 2026 18:00 UK time. Course not yet locked."}
-  ],
-  "status": {
-    "overdue": [
-      {"item": "Request counselor + teacher LORs", "who": "amogh", "wasDue": "2026-08-15"},
-      {"item": "Common App account setup + profile", "who": "amogh", "wasDue": "2026-08-15"}
-    ],
-    "thisWeek": [
-      {"item": "Ask two teachers + counselor for recommendations", "who": "amogh", "due": "2026-08-19"},
-      {"item": "Create Common App account, add 11 confirmed US schools", "who": "amogh", "due": "2026-08-19"},
-      {"item": "Decide Chemical vs Aerospace/Mechanical Engineering", "who": "amogh", "due": "2026-08-24"},
-      {"item": "Check whether Amogh has a US SSN", "who": "parent", "due": "2026-08-20"},
-      {"item": "Decide the UK question — are the five UK schools real?", "who": "parent", "due": "2026-08-24"},
-      {"item": "Record existing SAT score + section split (total: 1510)", "who": "parent", "due": "2026-08-19"},
-      {"item": "Decide the SAT retake (3 Oct sitting, reg. closes 18 Sep)", "who": "parent", "due": "2026-08-26"},
-      {"item": "Email counselor: Common App + UCAS reference capability", "who": "parent", "due": "2026-08-19"},
-      {"item": "Create FSA IDs at studentaid.gov (after SSN confirmed)", "who": "parent", "due": "2026-08-22"}
-    ],
-    "note": "16 schools confirmed “Yes” are shown below. 22 more are marked add / ?? / Not sure on the source university list and are deliberately NOT shown here until confirmed (see OPEN-QUESTIONS OQ-04 in the vault)."
-  }
-}
-</script>
-<!-- END COWORK AGENT DATA SECTION -->
+<div class="wrap">
+
 <header>
-  <h1 id="page-title">College Application Tracker</h1>
-  <p id="page-subtitle"></p>
+  <div>
+    <h1>Amogh — Admissions Dashboard</h1>
+    <div class="sub" id="todayLine"></div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" id="themeBtn">Dark</button>
 </header>
-<div id="last-updated"></div>
-<div id="stats">
-  <div class="stat-card"><div class="num" id="s-total">0</div><div class="lbl">Total</div></div>
-  <div class="stat-card"><div class="num" id="s-submitted">0</div><div class="lbl">Submitted</div></div>
-  <div class="stat-card"><div class="num" id="s-accepted">0</div><div class="lbl">Accepted</div></div>
-  <div class="stat-card"><div class="num" id="s-pending">0</div><div class="lbl">Pending</div></div>
+
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-view="now">Now</button>
+  <button role="tab" aria-selected="false" data-view="cal">Calendar</button>
+  <button role="tab" aria-selected="false" data-view="schools">Schools</button>
+  <button role="tab" aria-selected="false" data-view="people">People &amp; Docs</button>
+  <button role="tab" aria-selected="false" data-view="money">Money</button>
+</nav>
+
+<!-- ============ NOW ============ -->
+<section id="v-now">
+  <div class="tiles" id="tiles"></div>
+
+  <div class="filters">
+    <span class="lab">Owner</span>
+    <button class="pill" data-f="owner" data-v="all" aria-pressed="true">All</button>
+    <button class="pill" data-f="owner" data-v="parent" aria-pressed="false">Father</button>
+    <button class="pill" data-f="owner" data-v="amogh" aria-pressed="false">Amogh</button>
+    <button class="pill" data-f="owner" data-v="counselor" aria-pressed="false">Counselor</button>
+    <span style="width:12px"></span>
+    <span class="lab">Show</span>
+    <button class="pill" data-f="done" data-v="hide" aria-pressed="true">Open only</button>
+  </div>
+
+  <div class="card"><h2>Overdue <span class="count" id="c-over"></span></h2><div class="body" id="l-over"></div></div>
+  <div class="card"><h2>Next 14 days <span class="count" id="c-soon"></span></h2><div class="body" id="l-soon"></div></div>
+  <div class="card"><h2>Later &amp; blocked <span class="count" id="c-later"></span></h2><div class="body" id="l-later"></div></div>
+  <div class="card"><h2>Resolved <span class="count" id="c-done"></span></h2><div class="body" id="l-done"></div></div>
+</section>
+
+<!-- ============ CALENDAR ============ -->
+<section id="v-cal" class="hide">
+  <div class="note"><strong>All dates render in IST.</strong> Deadlines set abroad are converted from their own zone — UCAS runs on UK time (which switches BST→GMT on 25 Oct 2026), College Board on US Eastern. A deadline read in the wrong zone is a lost application.</div>
+  <div class="card">
+    <h2>Aug 2026 → Mar 2027</h2>
+    <div class="tl"><div class="tlinner">
+      <div class="tlhead"><div></div><div class="months" id="months"></div></div>
+      <div class="rail"><div class="railName">Hard cutoffs</div><div class="railTrack" id="rail"></div></div>
+      <div id="lanes"></div>
+    </div></div>
+    <div class="legend">
+      <span><i style="background:var(--s1)"></i>US applications</span>
+      <span><i style="background:var(--s2)"></i>UK / UCAS — parked</span>
+      <span><i style="background:var(--s3)"></i>School &amp; exams</span>
+      <span><i style="background:var(--s4)"></i>Testing</span>
+      <span><i style="background:var(--s7)"></i>Financial aid</span>
+      <span><i style="background:var(--crit)"></i>Hard cutoff</span>
+      <span><i style="background:repeating-linear-gradient(45deg,var(--axis),var(--axis) 3px,transparent 3px,transparent 6px)"></i>Freeze — exams</span>
+    </div>
+  </div>
+  <div class="card"><h2>Every dated item</h2><div class="tbwrap"><table>
+    <thead><tr><th>Date (IST)</th><th>Days</th><th>Item</th><th>Track</th><th>Authoritative time</th><th>Hard?</th></tr></thead>
+    <tbody id="dateRows"></tbody>
+  </table></div></div>
+</section>
+
+<!-- ============ SCHOOLS ============ -->
+<section id="v-schools" class="hide">
+  <div class="note"><strong>35 rows is a brainstorm, not a list.</strong> 15 marked Yes, 11 marked <em>add</em> (meaning unresolved — OQ‑04), 9 unsure. Fifteen US applications is roughly twenty supplement essays. Cutting this list is the single decision that makes the term possible or impossible.</div>
+  <div class="filters">
+    <span class="lab">Mark</span>
+    <button class="pill" data-f="mark" data-v="all" aria-pressed="true">All</button>
+    <button class="pill" data-f="mark" data-v="Yes" aria-pressed="false">Yes</button>
+    <button class="pill" data-f="mark" data-v="add" aria-pressed="false">add</button>
+    <button class="pill" data-f="mark" data-v="unsure" aria-pressed="false">Unsure</button>
+  </div>
+  <div class="card"><h2>School list <span class="count" id="c-schools"></span></h2><div class="tbwrap"><table>
+    <thead><tr><th>School</th><th>Mark</th><th>System</th><th>ChemE</th><th>Aero/Mech</th><th>Test policy</th><th>Aid for non-resident</th><th>Deadline</th></tr></thead>
+    <tbody id="schoolRows"></tbody>
+  </table></div></div>
+</section>
+
+<!-- ============ PEOPLE ============ -->
+<section id="v-people" class="hide">
+  <div class="note"><strong>Submitted is not received.</strong> The only column that counts is the last one. A recommender who agreed in August and never clicked the link is the commonest way an application goes silently incomplete — and nobody is notified.</div>
+  <div class="card"><h2>Recommenders</h2><div class="tbwrap"><table>
+    <thead><tr><th>Person</th><th>Role</th><th>Asked</th><th>Agreed</th><th>Packet sent</th><th>Invited</th><th>Portal shows received</th></tr></thead>
+    <tbody id="recRows"></tbody>
+  </table></div></div>
+  <div class="card"><h2>Documents &amp; records</h2><div class="tbwrap"><table>
+    <thead><tr><th>Document</th><th>From</th><th>Needed by</th><th>Status</th></tr></thead>
+    <tbody id="docRows"></tbody>
+  </table></div></div>
+</section>
+
+<!-- ============ MONEY ============ -->
+<section id="v-money" class="hide">
+  <div class="note"><strong>The counter-intuitive part.</strong> Amogh is a non-resident of every US state, so out-of-state publics charge full freight and reserve need-based aid for residents. Full-need privates treat him as any other domestic applicant. On this list the cheap-looking schools are the expensive ones. Three net price calculators would settle it in an evening.</div>
+  <div class="tiles" id="moneyTiles"></div>
+  <div class="card"><h2>Aid timeline</h2><div class="tbwrap"><table>
+    <thead><tr><th>Item</th><th>Opens / due</th><th>Owner</th><th>Status</th><th>Note</th></tr></thead>
+    <tbody id="aidRows"></tbody>
+  </table></div></div>
+</section>
+
+<footer id="foot"></footer>
 </div>
 
-<div class="section-title">Status</div>
-<div class="panel-wrap">
-  <div class="panel overdue">
-    <h3>Overdue</h3>
-    <ul id="p-overdue"></ul>
-  </div>
-  <div class="panel">
-    <h3>This Week (17&ndash;24 Aug)</h3>
-    <ul id="p-thisweek"></ul>
-  </div>
-  <div class="panel">
-    <h3>School List</h3>
-    <div class="note" id="p-note"></div>
-  </div>
-</div>
-
-<div id="filters">
-  <button class="filter-btn active" data-filter="all">All</button>
-  <button class="filter-btn" data-filter="planning">Planning</button>
-  <button class="filter-btn" data-filter="in-progress">In Progress</button>
-  <button class="filter-btn" data-filter="submitted">Submitted</button>
-  <button class="filter-btn" data-filter="accepted">Accepted</button>
-</div>
-<div id="grid"><div id="empty">No applications match this filter.</div></div>
-<footer>Updated by Cowork &middot; <span id="footer-date"></span></footer>
 <script>
-(function(){
-  var raw=document.getElementById('college-data-store').textContent;
-  var data=JSON.parse(raw);
-  var meta=data.meta, apps=data.applications, status=data.status||{};
-  document.getElementById('page-title').textContent=(meta.studentName||'Student')+"'s College Application Tracker";
-  document.getElementById('page-subtitle').textContent=meta.cycle||'';
-  document.getElementById('last-updated').textContent='Last updated: '+(meta.lastUpdated||'-')+(meta.updatedBy?'  ·  '+meta.updatedBy:'');
-  document.getElementById('footer-date').textContent=meta.lastUpdated||'';
-  var BADGE={planning:'badge-planning','in-progress':'badge-in-progress',submitted:'badge-submitted',deferred:'badge-deferred',waitlisted:'badge-waitlisted',accepted:'badge-accepted',rejected:'badge-rejected',enrolled:'badge-enrolled'};
-  var LABEL={planning:'Planning','in-progress':'In Progress',submitted:'Submitted',deferred:'Deferred',waitlisted:'Waitlisted',accepted:'Accepted',rejected:'Rejected',enrolled:'Enrolled'};
-  var SUB=['submitted','deferred','waitlisted','accepted','rejected','enrolled'];
-  var PEN=['planning','in-progress'];
-  document.getElementById('s-total').textContent=apps.length;
-  document.getElementById('s-submitted').textContent=apps.filter(function(a){return SUB.indexOf(a.status)>-1;}).length;
-  document.getElementById('s-accepted').textContent=apps.filter(function(a){return a.status==='accepted'||a.status==='enrolled';}).length;
-  document.getElementById('s-pending').textContent=apps.filter(function(a){return PEN.indexOf(a.status)>-1;}).length;
-  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-  function dc(d){if(!d)return'tbd';var dt=new Date(d),now=new Date();if(dt<now)return'past';return((dt-now)/864e5)<30?'soon':'ok';}
-  function fd(d){if(!d)return'TBD';return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+/* ============================================================
+   DATA — this block is the whole editable surface of the page.
+   Everything below it is rendering. See OQ-11 for where this
+   should ultimately live (Google Sheet vs GitHub JSON).
+   ============================================================ */
+const TODAY = "2026-08-17";
 
-  var ol=document.getElementById('p-overdue');
-  (status.overdue||[]).forEach(function(o){
-    var li=document.createElement('li');
-    li.innerHTML='<span class="who">'+esc(o.who)+'</span>'+esc(o.item)+'<span class="due">was due '+fd(o.wasDue)+'</span>';
-    ol.appendChild(li);
-  });
-  var tw=document.getElementById('p-thisweek');
-  (status.thisWeek||[]).forEach(function(o){
-    var li=document.createElement('li');
-    li.innerHTML='<span class="who">'+esc(o.who)+'</span>'+esc(o.item)+'<span class="due">due '+fd(o.due)+'</span>';
-    tw.appendChild(li);
-  });
-  document.getElementById('p-note').textContent=status.note||'';
+/* PUBLIC = true strips everything that should not sit on a public URL:
+   the SAT score, the Money tab, and aid detail. Set false for the private
+   copy in the vault. See 99-Meta/OPEN-QUESTIONS.md OQ-13. */
+const PUBLIC = false;
 
-  var grid=document.getElementById('grid');
-  var empty=document.getElementById('empty');
-  function render(f){
-    Array.from(grid.querySelectorAll('.card')).forEach(function(c){c.remove();});
-    var filtered=apps.filter(function(a){ return f==='all' || a.status===f; });
-    empty.style.display=filtered.length===0?'block':'none';
-    filtered.forEach(function(app){
-      var card=document.createElement('div');
-      card.className='card';
-      card.innerHTML='<div class="card-header"><div><h2>'+esc(app.school)+'</h2>'+(app.location?'<div class="location">'+esc(app.location)+'</div>':'')+'</div><span class="badge '+(BADGE[app.status]||'badge-planning')+'">'+esc(LABEL[app.status]||app.status)+'</span></div><div class="card-meta">'+(app.appType?'<span data-icon="doc">'+esc(app.appType)+'</span>':'')+'</div><div class="deadline '+dc(app.deadline)+'">Deadline: '+fd(app.deadline)+'</div>'+(app.notes?'<div class="notes">'+esc(app.notes)+'</div>':'');
-      grid.appendChild(card);
+const TASKS = [
+ {id:"AMG-GEN-LOR-01", t:"Ask the two teachers and the counselor for recommendations", owner:"amogh", due:"2026-08-19", status:"todo", hard:false,
+  why:"Overdue against the family's own plan (was 15 Aug). Hours of work. Gates letter drafts due 31 Aug for every school on the list. Ask now, name schools later.", overdueFrom:"2026-08-15"},
+ {id:"AMG-GEN-APP-03", t:"Create the Common App account and add the Yes schools", owner:"amogh", due:"2026-08-19", status:"todo", hard:false,
+  why:"Overdue (was 15 Aug). Supplement prompts are invisible until a school is added to the account — this blocks the entire prompt log.", overdueFrom:"2026-08-15"},
+ {id:"AMG-GEN-TST-06", t:"SAT sitting — 22 August", owner:"amogh", due:"2026-08-22", status:"todo", hard:true,
+  why:"Already registered. Scores release 4 Sept 2026. This is the retake — the 29 Aug decision point the plan was built around no longer exists."},
+ {id:"AMG-GEN-TST-04", t:"Record the SAT section split from the existing 1510", owner:"parent", due:"2026-08-19", status:"todo", hard:false,
+  why:"Still worth doing before the 22nd. MIT's admitted middle 50% is Math 780–800, ERW 740–780 — for an engineering applicant the Math number is the one that carries. Knowing which half is soft tells him where to spend the last four days."},
+ {id:"AMG-GEN-TST-02", t:"Decide on an October sitting — after the 4 Sept scores land", owner:"parent", due:"2026-09-16", status:"todo", hard:true,
+  why:"Skip Sept 12: registration closes 28 Aug, before the 22 Aug result is known, and the sitting collides with the start of half-yearly exams. Oct 3 registration closes 18 Sept — two weeks AFTER the score arrives, so that decision can be made informed. Oct 3 scores release 16 Oct, clearing 1 Nov."},
+ {id:"AMG-GEN-SCH-01", t:"Email the counselor — Common App capability, school profile, predicted grades", owner:"parent", due:"2026-08-21", status:"todo", hard:false,
+  why:"Draft is written and sitting in the counselor-exchange folder. Every answer in it has a multi-week turnaround, and a counselor who isn't set up on Common App is a silent application failure."},
+ {id:"AMG-GEN-FIN-04", t:"Create both FSA IDs at studentaid.gov", owner:"parent", due:"2026-08-22", status:"todo", hard:false,
+  why:"Unblocked — SSN confirmed. Foreign address and foreign phone routinely route to manual identity review, which runs 1–3 weeks. FAFSA opens 1 Oct."},
+ {id:"AMG-GEN-SCH-02", t:"Confirm exam board, A-Level subjects, AS grades, retake subjects", owner:"parent", due:"2026-08-24", status:"todo", hard:false,
+  why:"Feeds the curriculum mapping, which is deliberately empty until answered. CIE and Edexcel are different qualifications and 'IGCSE' alone tells a US reader nothing."},
+ {id:"AMG-GEN-ADM-04", t:"Move the counselor-exchange folder out of the vault", owner:"parent", due:"2026-08-24", status:"todo", hard:false,
+  why:"Must happen before any share link is issued. Drive permissions cascade downward — a folder nested inside the vault cannot be shared with the counselor without risking exposure of 05-Financial."},
+ {id:"AMG-GEN-APP-01", t:"Draft the resume", owner:"amogh", due:"2026-08-24", status:"todo", hard:false,
+  why:"Needed for the recommender packets, not for any college deadline. A teacher writing from memory writes a worse letter."},
+ {id:"AMG-GEN-APP-02", t:"Draft the brag sheet for the counselor", owner:"amogh", due:"2026-08-24", status:"todo", hard:false,
+  why:"Question 7 — 'is there anything in the transcript that needs explaining' — is the one that matters, given the AS retakes."},
+ {id:"AMG-GEN-ESS-01", t:"Common App personal statement — first full draft", owner:"amogh", due:"2026-08-31", status:"todo", hard:false,
+  why:"650 words, hard cap. Consider doing the activities list first — it is a forced inventory and routinely surfaces what the essay should have been about."},
+ {id:"AMG-GEN-ADM-03", t:"Decide the intended major", owner:"amogh", due:"2026-08-31", status:"todo", hard:false,
+  why:"CMU, Georgia Tech, UIUC, Michigan and Cornell admit by college or by major, and the choice is not switchable after admission."},
+ {id:"AMG-GEN-FIN-03", t:"Run three net price calculators — MIT, one OOS public, one mid private", owner:"parent", due:"2026-08-31", status:"todo", hard:false,
+  why:"Free, one evening, and it will settle the shape of the school list faster than any amount of reading."},
+ {id:"AMG-GEN-APP-04", t:"Cut the school list to a real number", owner:"parent", due:"2026-08-31", status:"todo", hard:false,
+  why:"35 rows. Resolve what 'add' means first (OQ-04). This is the variable that decides whether October is busy or impossible."},
+ {id:"AMG-GEN-APP-05", t:"Activities list — 10 slots, 150 characters each", owner:"amogh", due:"2026-09-30", status:"todo", hard:false,
+  why:"Characters, not words, and they include spaces. Slot 1 is read carefully; slot 10 often isn't. Order by significance, not chronology."},
+ {id:"AMG-GEN-FIN-10", t:"Assemble the FEIE packet before FAFSA opens", owner:"parent", due:"2026-09-25", status:"todo", hard:false,
+  why:"FEIE is added straight back into the Student Aid Index — the aid formula sees full worldwide earnings, not US taxable income. Expect a verification request."},
+ {id:"AMG-GEN-FIN-07", t:"File FAFSA", owner:"parent", due:"2026-10-07", status:"todo", hard:false,
+  why:"Opens 1 Oct 2026, uses the 2025 return. Expat returns frequently fail the automatic IRS data transfer — plan on manual entry."},
+ {id:"AMG-GEN-FIN-09", t:"File CSS Profile", owner:"parent", due:"2026-10-14", status:"todo", hard:false,
+  why:"Separate from FAFSA, treats foreign income differently, per-school fees. Check requires_ncp per school — the Noncustodial Profile is a second deadline people find in December."},
+ {id:"AMG-GEN-ADM-01", t:"UK track — revisit the park before it expires", owner:"parent", due:"2026-09-14", status:"blocked", hard:true,
+  why:"PARKED by decision. Parking is functionally withdrawal: ESAT registration closes 28 Sep and UCAS closes 15 Oct, and neither has a late route. If not revisited by mid-September, Cambridge, Imperial and UCL lapse by default."},
+ {id:"AMG-GEN-ADM-02", t:"Confirm Amogh has a US Social Security Number", owner:"parent", due:"2026-08-20", status:"done",
+  why:"RESOLVED 17 Aug — he has one. Unblocks the FSA ID and FAFSA."},
+ {id:"AMG-GEN-TST-05", t:"Record the existing SAT total", owner:"parent", due:"2026-08-19", status:"done",
+  why:"RESOLVED 17 Aug — 1510. Section split still outstanding."},
+];
+
+const EVENTS = [
+ {d:"2026-08-22", short:"SAT sitting", l:"SAT sitting — Amogh is registered", track:"testing", hard:true, tz:"local centre", note:"Scores release 4 Sept"},
+ {d:"2026-08-29", short:"SAT Sep-12 reg.", l:"SAT Sept-12 registration closes", track:"testing", hard:false, tz:"28 Aug 23:59 ET", note:"Skip — decision would be blind, and it collides with half-yearly exams"},
+ {d:"2026-09-04", l:"SAT scores release — 22 Aug sitting", track:"testing", hard:false, tz:"US", note:"The gate on any October retake decision"},
+ {d:"2026-08-31", l:"School list finalisation (family plan)", track:"us", hard:false, tz:"IST"},
+ {d:"2026-08-31", l:"Common App essay target (family plan)", track:"us", hard:false, tz:"IST"},
+ {d:"2026-09-12", l:"SAT sitting", track:"testing", hard:false, tz:"local centre"},
+ {d:"2026-09-19", short:"SAT Oct-3 reg.", l:"SAT Oct-3 registration closes", track:"testing", hard:true, tz:"18 Sept 23:59 ET", note:"09:29 IST · decide here, with the 22 Aug score in hand"},
+ {d:"2026-09-28", short:"ESAT reg.", l:"ESAT registration closes — UK", track:"uk", hard:true, tz:"UK, time TBD", note:"PARKED — lapses without action"},
+ {d:"2026-10-01", l:"FAFSA 2027–28 opens", track:"aid", hard:false, tz:"US"},
+ {d:"2026-10-01", l:"CSS Profile opens", track:"aid", hard:false, tz:"US"},
+ {d:"2026-10-03", l:"SAT sitting", track:"testing", hard:false, tz:"local centre"},
+ {d:"2026-10-15", short:"UCAS", l:"UCAS deadline — Cambridge", track:"uk", hard:true, tz:"15 Oct 18:00 UK", note:"22:30 IST · PARKED"},
+ {d:"2026-10-15", l:"Supplements batch 1 (family plan)", track:"us", hard:false, tz:"IST"},
+ {d:"2026-10-22", short:"Cambridge supp.", l:"My Cambridge Application + transcript", track:"uk", hard:true, tz:"22 Oct 18:00 UK", note:"22:30 IST · PARKED"},
+ {d:"2026-11-01", short:"EA / ED", l:"Typical Early Action / ED deadlines", track:"us", hard:true, tz:"per school — verify", note:"Family plan has no early round"},
+ {d:"2026-11-30", short:"MIT tests · EA", l:"MIT — tests must be taken by, for EA", track:"testing", hard:true, tz:"US"},
+ {d:"2026-12-01", l:"Supplements batch 2 (family plan)", track:"us", hard:false, tz:"IST"},
+ {d:"2026-12-15", l:"★ US Regular Decision submit target", track:"us", hard:false, tz:"IST", note:"The family plan's only milestone"},
+ {d:"2026-12-31", short:"MIT tests · RA", l:"MIT — tests must be taken by, for RA", track:"testing", hard:true, tz:"US"},
+ {d:"2027-01-01", short:"RD deadlines", l:"Typical Regular Decision deadlines", track:"us", hard:true, tz:"per school — verify"},
+];
+
+const BANDS = [
+ {lane:"school", s:"2026-09-12", e:"2026-09-28", l:"Half-yearly exams", freeze:true},
+ {lane:"school", s:"2026-09-30", e:"2026-11-10", l:"AS Level retakes", freeze:true},
+ {lane:"school", s:"2026-12-02", e:"2026-12-24", l:"Winter break / study camp"},
+ {lane:"us", s:"2026-08-17", e:"2026-08-31", l:"Common App essay"},
+ {lane:"us", s:"2026-09-01", e:"2026-10-15", l:"Supplements — batch 1"},
+ {lane:"us", s:"2026-10-16", e:"2026-12-01", l:"Supplements — batch 2"},
+ {lane:"us", s:"2026-12-01", e:"2026-12-15", l:"Final review & submit"},
+ {lane:"testing", s:"2026-08-17", e:"2026-08-22", l:"SAT prep"},
+ {lane:"testing", s:"2026-09-04", e:"2026-09-19", l:"October retake decision"},
+ {lane:"aid", s:"2026-08-17", e:"2026-09-25", l:"FSA IDs + FEIE packet"},
+ {lane:"aid", s:"2026-10-01", e:"2026-10-14", l:"FAFSA + CSS filing"},
+ {lane:"uk", s:"2026-08-17", e:"2026-09-28", l:"ESAT registration window", parked:true},
+ {lane:"uk", s:"2026-09-01", e:"2026-10-15", l:"UCAS statement + reference", parked:true},
+ {lane:"uk", s:"2026-12-01", e:"2026-12-21", l:"Cambridge interviews", parked:true},
+];
+
+const LANES = [
+ {k:"us", n:"US applications", c:"var(--s1)"},
+ {k:"testing", n:"Testing", c:"var(--s4)"},
+ {k:"aid", n:"Financial aid", c:"var(--s7)"},
+ {k:"school", n:"School & exams", c:"var(--s3)"},
+ {k:"uk", n:"UK / UCAS (parked)", c:"var(--s2)", parked:true},
+];
+
+const SCHOOLS = [
+ {n:"MIT", m:"Yes", sys:"Direct", ce:5, am:5, tp:"Required", aid:"Full need — verify for citizen abroad", dl:"EA 1 Nov / RA 1 Jan — verify"},
+ {n:"University of Pennsylvania", m:"Yes", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"Full need — verify", dl:"TBD"},
+ {n:"Johns Hopkins", m:"Yes", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"Full need — verify", dl:"TBD"},
+ {n:"Carnegie Mellon", m:"Yes", sys:"CommonApp", ce:3, am:5, tp:"TBD", aid:"TBD", dl:"TBD"},
+ {n:"Tufts", m:"Yes", sys:"CommonApp", ce:3, am:3, tp:"TBD", aid:"TBD", dl:"TBD"},
+ {n:"Georgia Tech", m:"Yes", sys:"CommonApp", ce:5, am:5, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"Northeastern", m:"Yes", sys:"CommonApp", ce:3, am:4, tp:"TBD", aid:"Merit likely", dl:"TBD"},
+ {n:"Virginia Tech", m:"Yes", sys:"CommonApp", ce:4, am:5, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"Rutgers–New Brunswick", m:"Yes", sys:"Direct", ce:4, am:4, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"RPI", m:"Yes", sys:"CommonApp", ce:4, am:5, tp:"TBD", aid:"Merit likely", dl:"TBD"},
+ {n:"UIUC", m:"Yes", sys:"CommonApp", ce:5, am:5, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"Northwestern ⚠ listed as Boston MA", m:"Yes", sys:"CommonApp", ce:null, am:null, tp:"TBD", aid:"Full need — verify", dl:"TBD"},
+ {n:"University of Cambridge", m:"Yes", sys:"UCAS", ce:null, am:null, tp:"ESAT", aid:"International fees — no aid", dl:"15 Oct 2026 — PARKED"},
+ {n:"Imperial College London", m:"Yes", sys:"UCAS", ce:null, am:null, tp:"ESAT", aid:"International fees — no aid", dl:"Jan 2027 — PARKED"},
+ {n:"University College London", m:"Yes", sys:"UCAS", ce:null, am:null, tp:"ESAT (course-dep.)", aid:"International fees — no aid", dl:"Jan 2027 — PARKED"},
+ {n:"University of Manchester", m:"Yes", sys:"UCAS", ce:null, am:null, tp:"None — verify", aid:"International fees — no aid", dl:"Jan 2027 — PARKED"},
+ {n:"University of Leeds", m:"Yes", sys:"UCAS", ce:null, am:null, tp:"None — verify", aid:"International fees — no aid", dl:"Jan 2027 — PARKED"},
+ {n:"Princeton", m:"add", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Harvard", m:"add", sys:"CommonApp", ce:3, am:3, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Yale", m:"add", sys:"CommonApp", ce:3, am:3, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Duke", m:"add", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Brown", m:"add", sys:"CommonApp", ce:3, am:3, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Columbia", m:"add", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Cornell", m:"add", sys:"CommonApp", ce:5, am:5, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"Dartmouth", m:"add", sys:"CommonApp", ce:3, am:3, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"University of Virginia", m:"add", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"UNC Chapel Hill", m:"add", sys:"CommonApp", ce:3, am:3, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"University of Michigan–Ann Arbor", m:"add", sys:"CommonApp", ce:5, am:5, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"University of Florida", m:"add", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"NYU", m:"unsure", sys:"CommonApp", ce:2, am:2, tp:"TBD", aid:"Does not meet full need", dl:"TBD"},
+ {n:"University of Maryland College Park", m:"unsure", sys:"CommonApp", ce:4, am:5, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"University of Notre Dame", m:"unsure", sys:"CommonApp", ce:4, am:4, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"University of Wisconsin–Madison", m:"unsure", sys:"CommonApp", ce:null, am:null, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"Vanderbilt University", m:"unsure", sys:"CommonApp", ce:3, am:null, tp:"TBD", aid:"Full need", dl:"TBD"},
+ {n:"University of Minnesota Twin Cities", m:"unsure", sys:"CommonApp", ce:null, am:null, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"Texas A&M University", m:"unsure", sys:"CommonApp", ce:5, am:5, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"University of Washington", m:"unsure", sys:"CommonApp", ce:null, am:null, tp:"TBD", aid:"OOS public — likely little", dl:"TBD"},
+ {n:"Rose-Hulman Institute of Technology", m:"unsure", sys:"CommonApp", ce:null, am:null, tp:"TBD", aid:"Merit likely", dl:"TBD"},
+];
+
+const RECS = [
+ {n:"Teacher 1 — TBD", r:"Subject teacher", a:"", ag:"", p:"", i:"", rec:""},
+ {n:"Teacher 2 — TBD", r:"Subject teacher", a:"", ag:"", p:"", i:"", rec:""},
+ {n:"Counselor — TBD", r:"Counselor + School Report", a:"", ag:"", p:"", i:"", rec:""},
+ {n:"Optional — Math SAT internship", r:"Supervisor", a:"", ag:"", p:"", i:"", rec:""},
+];
+
+const DOCS = [
+ {d:"Official transcript", f:"Counselor", by:"Earliest US deadline", s:"not started"},
+ {d:"School profile document", f:"Counselor", by:"With transcript", s:"not started"},
+ {d:"Predicted grades", f:"Subject teachers → counselor", by:"TBD — verify", s:"not started"},
+ {d:"10th & 11th board documents, scanned", f:"Amogh", by:"Before 1st deadline", s:"not started"},
+ {d:"All certificates, scanned", f:"Amogh", by:"Before LOR requests", s:"not started"},
+ {d:"AP Calculus BC score report (separate send)", f:"College Board", by:"Per school", s:"not started"},
+ {d:"Passport / CRBA / SSN card", f:"Family records", by:"Now — for portals", s:"SSN confirmed"},
+ {d:"SRAR / self-report platform credentials", f:"Arrives after submission", by:"Post-submission", s:"watch inbox"},
+];
+
+const AID = [
+ {i:"FSA ID — Amogh", d:"By 22 Aug 2026", o:"parent", s:"unblocked", n:"SSN confirmed. Foreign address may trigger 1–3 week manual review."},
+ {i:"FSA ID — father", d:"By 22 Aug 2026", o:"parent", s:"unblocked", n:"Separate email and phone from Amogh's."},
+ {i:"FEIE documentation packet", d:"By 25 Sept 2026", o:"parent", s:"not started", n:"Form 2555, full 1040 with all schedules, employer statements, currency basis."},
+ {i:"FAFSA 2027–28", d:"Opens 1 Oct 2026", o:"parent", s:"waiting", n:"Uses the 2025 return. FEIE added straight back into the SAI."},
+ {i:"CSS Profile", d:"Opens 1 Oct 2026", o:"parent", s:"waiting", n:"Per-school. Check requires_ncp — the Noncustodial Profile is a separate deadline."},
+ {i:"Net price calculators ×3", d:"By 31 Aug 2026", o:"parent", s:"not started", n:"Free. The single most informative hour available right now."},
+ {i:"Noncustodial Profile", d:"TBD", o:"parent", s:"open question", n:"OQ-02 — do both parents appear on aid applications?"},
+];
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const D=s=>new Date(s+"T00:00:00Z");
+const T=D(TODAY);
+const days=s=>Math.round((D(s)-T)/86400000);
+const fmt=s=>D(s).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
+const esc=s=>String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+document.getElementById("todayLine").textContent =
+  "Monday 17 August 2026 · " + fmt(TODAY) + " IST · Class of 2027, Fall 2027 entry · single source of truth: the vault at Amogh-Saanvi-College\\Amogh";
+
+/* ---- stat tiles ---- */
+function tiles(){
+  const nextHard = EVENTS.filter(e=>e.hard && days(e.d)>=0 && e.track!=="uk").sort((a,b)=>D(a.d)-D(b.d))[0];
+  const over = TASKS.filter(t=>t.status!=="done" && t.overdueFrom).length;
+  const wk = TASKS.filter(t=>t.status!=="done" && days(t.due)>=0 && days(t.due)<=7).length;
+  const uk = days("2026-09-28");
+  const data=[
+   {cap:"SAT sitting", val:days("2026-08-22"), unit:"days", note:"22 Aug · registered · scores 4 Sept", c:"var(--crit)"},
+   {cap:"Overdue right now", val:over, unit:over===1?"item":"items", note:"Both were due 15 Aug on the family plan", c:"var(--crit)"},
+   {cap:"Due in the next 7 days", val:wk, unit:"items", note:"Across all owners", c:"var(--warn)"},
+   {cap:"FAFSA opens", val:days("2026-10-01"), unit:"days", note:"Uses the 2025 federal return", c:"var(--s7)"},
+   {cap:"US RD submit target", val:days("2026-12-15"), unit:"days", note:"The family plan's only milestone", c:"var(--s1)"},
+   {cap:"UK — parked", val:"lapses in "+uk+"d", unit:"", note:"ESAT registration closes 28 Sept, no late route", c:"var(--s2)", parked:true},
+  ];
+  document.getElementById("tiles").innerHTML = data.map(d=>`
+   <div class="tile${d.parked?" parked":""}"><div class="bar" style="background:${d.c}"></div>
+     <div class="cap">${esc(d.cap)}</div>
+     <div class="val">${esc(d.val)}${d.unit?`<span class="unit">${esc(d.unit)}</span>`:""}</div>
+     <div class="note">${esc(d.note)}</div></div>`).join("");
+
+  document.getElementById("moneyTiles").innerHTML = [
+   {cap:"FAFSA opens",val:days("2026-10-01"),unit:"days",note:"1 Oct 2026",c:"var(--s7)"},
+   {cap:"SAT total on record",val:PUBLIC?"on file":"1510",unit:"",note:PUBLIC?"Private — see the vault copy":"MIT admitted middle 50%: 1520–1580",c:"var(--warn)"},
+   {cap:"Schools on the list",val:SCHOOLS.length,unit:"",note:"15 Yes · 11 add · 9 unsure",c:"var(--s1)"},
+   {cap:"Out-of-state publics",val:SCHOOLS.filter(s=>s.aid.startsWith("OOS")).length,unit:"",note:"Least aid-generous category for a non-resident",c:"var(--serious)"},
+  ].map(d=>`<div class="tile"><div class="bar" style="background:${d.c}"></div>
+     <div class="cap">${esc(d.cap)}</div><div class="val">${esc(d.val)}${d.unit?`<span class="unit">${esc(d.unit)}</span>`:""}</div>
+     <div class="note">${esc(d.note)}</div></div>`).join("");
+}
+
+/* ---- tasks ---- */
+let F={owner:"all", done:"hide", mark:"all"};
+function taskHTML(t){
+  const dd=days(t.due);
+  const isOver = t.status!=="done" && (t.overdueFrom || dd<0);
+  let st, lab;
+  if(t.status==="done"){st="good";lab="resolved";}
+  else if(t.status==="blocked"){st="neutral";lab="blocked / parked";}
+  else if(isOver){st="crit";lab="overdue";}
+  else if(dd<=7){st="warn";lab="this week";}
+  else {st="neutral";lab="scheduled";}
+  return `<div class="task${t.status==="done"?" done":""}">
+    <div class="chk" role="checkbox" aria-checked="${t.status==="done"}"></div>
+    <div>
+      <div class="t">${esc(t.t)}${t.hard?' <span class="st crit" style="margin-left:6px">hard cutoff</span>':''}</div>
+      <div class="meta">
+        <span class="chip owner-${esc(t.owner)}"><span class="dot"></span>${t.owner==="parent"?"Father":t.owner==="amogh"?"Amogh":esc(t.owner)}</span>
+        <span class="st ${st}">${lab}</span>
+        <span class="id">${esc(t.id)}</span>
+      </div>
+      <div class="why">${esc(t.why||"")}</div>
+    </div>
+    <div class="right">
+      <div class="due">${fmt(t.due)}</div>
+      <div class="days" style="color:${isOver?'var(--crit)':dd<=7?'var(--ink)':'var(--muted)'}">${
+        t.status==="done"?"—":isOver?(t.overdueFrom?Math.abs(days(t.overdueFrom))+"d late":Math.abs(dd)+"d late"):"in "+dd+"d"}</div>
+    </div></div>`;
+}
+function renderTasks(){
+  const vis=t=>F.owner==="all"||t.owner===F.owner;
+  const open=TASKS.filter(t=>t.status!=="done"&&vis(t));
+  const over=open.filter(t=>t.overdueFrom||days(t.due)<0);
+  const soon=open.filter(t=>!over.includes(t)&&t.status!=="blocked"&&days(t.due)<=14);
+  const later=open.filter(t=>!over.includes(t)&&!soon.includes(t));
+  const done=TASKS.filter(t=>t.status==="done"&&vis(t));
+  const put=(id,arr,cid)=>{
+    document.getElementById(id).innerHTML = arr.length?arr.sort((a,b)=>D(a.due)-D(b.due)).map(taskHTML).join("")
+      :`<div style="padding:14px 16px;color:var(--muted);font-size:13px">Nothing here.</div>`;
+    document.getElementById(cid).textContent = arr.length;
+  };
+  put("l-over",over,"c-over"); put("l-soon",soon,"c-soon");
+  put("l-later",later,"c-later"); put("l-done",done,"c-done");
+  document.querySelector("#l-done").closest(".card").classList.toggle("hide",F.done==="hide");
+}
+
+/* ---- timeline ---- */
+const T0=D("2026-08-01"), T1=D("2027-04-01"), SPAN=T1-T0;
+const pct=s=>((D(s)-T0)/SPAN*100);
+function renderCal(){
+  document.getElementById("months").innerHTML =
+   ["Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar"].map(m=>`<div>${m}</div>`).join("");
+  // cutoff rail — labels staggered across 3 tiers so they never overlap
+  const cuts = EVENTS.filter(e=>e.hard).sort((a,b)=>D(a.d)-D(b.d));
+  const rail = document.getElementById("rail");
+  rail.innerHTML = cuts.map(e=>{
+    const x = pct(e.d), parked = e.track==="uk";
+    return `<div class="cutStem" data-x="${x}"></div>
+      <div class="cutL${parked?" parked":""}" data-x="${x}" title="${esc(e.l)}">${esc(e.short||e.l)}</div>
+      <div class="cut${parked?" parked":""}" style="left:${x}%"></div>`;
+  }).join("");
+  // collision-aware tier packing: measure real label widths, place each on the
+  // lowest tier where it clears the previous label's right edge.
+  packRail();
+}
+// Measured layout must run while the calendar is visible — clientWidth is 0 when
+// the section is display:none, which is why this is separate from renderCal().
+function packRail(){
+    const rail = document.getElementById("rail");
+    const W = rail.clientWidth, GAP = 8, ROW = 17;
+    if(!W) return;
+    const right = [-1e9,-1e9,-1e9];
+    const labels = [...rail.querySelectorAll(".cutL")];
+    const stems  = [...rail.querySelectorAll(".cutStem")];
+    labels.forEach((el,i)=>{
+      const x = parseFloat(el.dataset.x)/100*W, w = el.offsetWidth;
+      let t = 0;
+      while(t<2 && x - w/2 < right[t] + GAP) t++;
+      right[t] = x + w/2;
+      el.style.left = x + "px"; el.style.top = (t*ROW) + "px";
+      stems[i].style.left = x + "px"; stems[i].style.top = (t*ROW + 13) + "px"; stems[i].style.bottom = "0";
     });
-  }
-  document.getElementById('filters').addEventListener('click',function(e){
-    var btn=e.target.closest('.filter-btn');
-    if(!btn)return;
-    document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
-    btn.classList.add('active');
-    render(btn.dataset.filter);
-  });
-  render('all');
-})();
+
+  document.getElementById("lanes").innerHTML = LANES.map(L=>{
+    const bs=BANDS.filter(b=>b.lane===L.k).map(b=>{
+      const l=pct(b.s), w=Math.max(pct(b.e)-l,1.2);
+      if(b.freeze) return `<div class="freeze" style="left:${l}%;width:${w}%" title="${esc(b.l)}"></div>
+        <div class="band" style="left:${l}%;width:${w}%;background:transparent;color:var(--ink2);border-color:transparent">${esc(b.l)}</div>`;
+      return `<div class="band" style="left:${l}%;width:${w}%;background:${L.c}" title="${esc(b.l)}">${esc(b.l)}</div>`;
+    }).join("");
+    const ms=EVENTS.filter(e=>e.track===L.k&&e.hard).map(e=>
+      `<div class="mk" style="left:${pct(e.d)}%" title="${esc(e.l)}"></div>`).join("");
+    return `<div class="lane${L.parked?" parkedLane":""}">
+      <div class="laneName"><span class="sw" style="background:${L.c}"></span>${esc(L.n)}</div>
+      <div class="track">${bs}${ms}</div></div>`;
+  }).join("");
+
+  document.getElementById("dateRows").innerHTML = EVENTS.slice().sort((a,b)=>D(a.d)-D(b.d)).map(e=>{
+    const dd=days(e.d);
+    return `<tr${e.track==="uk"?' style="opacity:.55"':''}>
+      <td class="num">${fmt(e.d)}</td>
+      <td class="num" style="color:${dd<0?'var(--muted)':dd<=14?'var(--crit)':'var(--ink2)'}">${dd<0?"past":"in "+dd+"d"}</td>
+      <td>${esc(e.l)}${e.note?`<div style="color:var(--muted);font-size:12px">${esc(e.note)}</div>`:""}</td>
+      <td>${esc((LANES.find(l=>l.k===e.track)||{}).n||e.track)}</td>
+      <td style="color:var(--ink2)">${esc(e.tz)}</td>
+      <td>${e.hard?'<span class="st crit">hard</span>':'<span class="st neutral">target</span>'}</td></tr>`;
+  }).join("");
+}
+
+/* ---- schools ---- */
+function renderSchools(){
+  const rows=SCHOOLS.filter(s=>F.mark==="all"||s.m===F.mark);
+  document.getElementById("c-schools").textContent=rows.length+" of "+SCHOOLS.length;
+  document.getElementById("schoolRows").innerHTML=rows.map(s=>{
+    const mc = s.m==="Yes"?"good":s.m==="add"?"warn":"neutral";
+    const parked = s.sys==="UCAS";
+    return `<tr${parked?' style="opacity:.55"':''}>
+      <td>${esc(s.n)}</td>
+      <td><span class="st ${mc}">${esc(s.m)}</span></td>
+      <td>${esc(s.sys)}</td>
+      <td class="num">${s.ce??"—"}</td><td class="num">${s.am??"—"}</td>
+      <td>${s.tp==="Required"?'<span class="st crit">Required</span>':esc(s.tp)}</td>
+      <td style="color:var(--ink2)">${esc(s.aid)}</td>
+      <td style="color:var(--ink2)">${esc(s.dl)}</td></tr>`;
+  }).join("");
+}
+
+/* ---- people & money ---- */
+function renderRest(){
+  const tick=v=>v?`<span class="st good">${esc(v)}</span>`:'<span style="color:var(--muted)">—</span>';
+  document.getElementById("recRows").innerHTML=RECS.map(r=>`<tr><td>${esc(r.n)}</td><td>${esc(r.r)}</td>
+    <td>${r.a?tick(r.a):'<span class="st crit">overdue</span>'}</td><td>${tick(r.ag)}</td><td>${tick(r.p)}</td>
+    <td>${tick(r.i)}</td><td>${tick(r.rec)}</td></tr>`).join("");
+  document.getElementById("docRows").innerHTML=DOCS.map(d=>`<tr><td>${esc(d.d)}</td><td>${esc(d.f)}</td>
+    <td style="color:var(--ink2)">${esc(d.by)}</td>
+    <td><span class="st ${d.s==="SSN confirmed"?"good":d.s==="watch inbox"?"warn":"neutral"}">${esc(d.s)}</span></td></tr>`).join("");
+  const aidEl=document.getElementById("aidRows"); if(aidEl) aidEl.innerHTML=AID.map(a=>`<tr><td>${esc(a.i)}</td><td>${esc(a.d)}</td>
+    <td><span class="chip owner-parent"><span class="dot"></span>Father</span></td>
+    <td><span class="st ${a.s==="unblocked"?"good":a.s==="open question"?"warn":"neutral"}">${esc(a.s)}</span></td>
+    <td style="color:var(--ink2)">${esc(a.n)}</td></tr>`).join("");
+}
+
+/* ---- wiring ---- */
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  ["now","cal","schools","people","money"].forEach(v=>
+    document.getElementById("v-"+v).classList.toggle("hide", v!==b.dataset.view));
+  if(b.dataset.view==="cal") packRail();
+});
+addEventListener("resize",()=>{ if(!document.getElementById("v-cal").classList.contains("hide")) packRail(); });
+document.querySelectorAll(".pill").forEach(p=>p.onclick=()=>{
+  if(p.dataset.f==="done"){ F.done = F.done==="hide"?"show":"hide";
+    p.setAttribute("aria-pressed",F.done==="hide"); p.textContent = F.done==="hide"?"Open only":"Show resolved";
+    renderTasks(); return; }
+  document.querySelectorAll(`.pill[data-f="${p.dataset.f}"]`).forEach(x=>x.setAttribute("aria-pressed",x===p));
+  F[p.dataset.f]=p.dataset.v; renderTasks(); renderSchools();
+});
+document.querySelectorAll(".task .chk").forEach(()=>{});
+document.addEventListener("click",e=>{
+  if(e.target.classList.contains("chk")) e.target.closest(".task").classList.toggle("done");
+});
+const tb=document.getElementById("themeBtn");
+tb.onclick=()=>{const d=document.documentElement.dataset.theme==="dark";
+  document.documentElement.dataset.theme=d?"light":"dark"; tb.textContent=d?"Dark":"Light";};
+
+document.getElementById("foot").innerHTML =
+ `Draft UI v0.1 · built 17 Aug 2026 from the vault at <code>Amogh-Saanvi-College\\Amogh</code>. `+
+ `Every date marked <em>TBD</em> or <em>verify</em> is unconfirmed — a plausible wrong deadline is worse than a blank. `+
+ `Checkbox ticks are local to this page and do <strong>not</strong> save yet: see OQ-11 for where the data should live.`;
+
+if(PUBLIC){
+  document.querySelector('nav button[data-view="money"]').remove();
+  document.getElementById("v-money").remove();
+  TASKS.forEach(t=>{ t.why = t.why.replace(/1510/g,"the score on file"); });
+  document.querySelectorAll("#schoolRows").forEach(()=>{});
+}
+tiles(); renderTasks(); renderCal(); renderSchools(); renderRest();
 </script>
 </body>
 </html>
