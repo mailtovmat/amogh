@@ -13,7 +13,8 @@ const DATA = {
   sibling: {name:"Saanvi", href:"https://mailtovmat.github.io/saanvi/"},
   notes: {
     overview: "<strong>This is not a mock with invented acceptances.</strong> Nothing has been submitted. The list is a brainstorm — 16 Yes, 13 add, 9 unsure. Cutting it is the decision that makes the term possible or impossible.",
-    applications: "<strong>16 Yes is still a brainstorm if the 13 add stay.</strong> Boston University is on the Excel as add and was missing from the previous dashboard. Northwestern is not an Amogh Yes — see OQ-05."
+    applications: "<strong>16 Yes is still a brainstorm if the 13 add stay.</strong> Boston University is on the Excel as add and was missing from the previous dashboard. Northwestern is not an Amogh Yes — see OQ-05.",
+    financial: "<strong>The counter-intuitive part.</strong> Amogh is a non-resident of every US state, so out-of-state publics charge full freight and reserve need-based aid for residents. Full-need privates treat him as any other domestic applicant. On this list the cheap-looking schools are the expensive ones. Three net price calculators would settle it in an evening. No dollar figures appear here because none have been run."
   },
   tz: "Asia/Kolkata",
   built: "2026-08-18",

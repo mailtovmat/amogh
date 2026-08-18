@@ -821,6 +821,8 @@
       return `<div class="note"><strong>Money tab hidden.</strong> Set PUBLIC to false in js/data.js to restore it. The SAT score and aid timeline are not on this copy.</div>`;
     }
     const sat = DATA.SAT_TOTAL;
+    const satLabel = (sat == null || DATA.PUBLIC) ? (DATA.PUBLIC ? "on file" : "—") : String(sat);
+    const satHint = DATA.PUBLIC ? "Private — see the vault" : (sat == null ? "Not recorded" : "Split still outstanding · MIT mid-50 1520–1580");
     const oos = schools.filter(s => s.aidCat === "oos").length;
     const fafsa = daysUntil("2026-10-01");
     const cats = [
@@ -833,10 +835,10 @@
       {value: fafsa, unit:"d", label:"Until FAFSA opens", hint:"1 Oct 2026 · 2025 tax year"},
       {value: "0/2", label:"FSA IDs created", hint:"Unblocked — SSN confirmed"},
       {value: "0/3", label:"Net price calculators", hint:"MIT · one OOS public · one mid private"},
-      {value: DATA.PUBLIC ? "on file" : String(sat), label:"SAT on record", hint: DATA.PUBLIC ? "Private — see the vault" : "Split still outstanding · MIT mid-50 1520–1580"}
+      {value: satLabel, label:"SAT on record", hint: satHint}
     ];
     return `<div class="stack">
-      <div class="note"><strong>The counter-intuitive part.</strong> Amogh is a non-resident of every US state, so out-of-state publics charge full freight and reserve need-based aid for residents. Full-need privates treat him as any other domestic applicant. On this list the cheap-looking schools are the expensive ones. Three net price calculators would settle it in an evening. No dollar figures appear here because none have been run — every COA on the redesign mock was sample data and has been removed.</div>
+      <div class="note">${DATA.notes && DATA.notes.financial ? DATA.notes.financial : ""}</div>
       <div class="kpis">${kpis.map(k => `
         <div class="kpi">
           <div class="val">${esc(k.value)}${k.unit?`<span class="unit">${esc(k.unit)}</span>`:""}</div>
