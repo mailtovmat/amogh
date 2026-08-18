@@ -8,6 +8,7 @@
    ============================================================ */
 const DATA = {
   studentName: "Amogh",
+  studentOwner: "amogh",
   classYear: "Class of 2027",
   entry: "Fall 2027",
 
@@ -214,7 +215,7 @@ const DATA = {
     {name:"10th & 11th board documents, scanned", kind:"Record", due:null, done:false, note:"Keep in one Drive folder."},
     {name:"All certificates, scanned", kind:"Record", due:"2026-08-24", done:false, note:"Some schools want these before writing LORs."},
     {name:"AP Calculus BC score report", kind:"Test", due:null, done:false, note:"Score 5. Separate send from College Board. Year TBD-VERIFY."},
-    {name:"Passport / CRBA / SSN card", kind:"Record", due:"2026-08-18", done:true, note:"SSN confirmed 17 Aug. Do not transcribe the number anywhere on this site."},
+    {name:"Passport / CRBA / SSN card", kind:"Record", due:"2026-08-18", done:true, pct:100, note:"SSN confirmed 17 Aug. Do not transcribe the number anywhere on this site."},
     {name:"SRAR / self-report platform credentials", kind:"Record", due:null, done:false, note:"Arrives after submission. Watch inbox."},
     {name:"Mid-year report", kind:"Record", due:"2027-02-01", done:false, note:"Sends after fall grades. Typical — verify per school."}
   ],

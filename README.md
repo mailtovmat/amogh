@@ -10,29 +10,18 @@ access control there is, and do not post it anywhere.
 
 Live site: https://mailtovmat.github.io/amogh/
 
-## Pages
+Tabs: Dashboard · Progress · Calendar · Docs-status · G-Drive · Universities · Financial Aid · People.
 
-| Page | File |
-|---|---|
-| Dashboard | `index.html` |
-| Applications | `applications.html` |
-| Progress | `progress.html` |
-| Calendar | `calendar.html` |
-| People | `people.html` |
-| Docs | `docs.html` |
-| Financial Aid | `financial.html` |
+Every page load, browser refresh, and the blue **Refresh** button reloads **Tasks** and **Documents Needed** from Amogh's application-plan spreadsheet, and rebuilds the G-Drive file tree from the live vault (markdown notes stay hidden). Universities, aid, people, and the gantt still come from the committed JS files.
 
-Design follows the College Tracker redesign (Plus Jakarta Sans, pill nav,
-KPI cards, plan gantt). Data is the real vault — not the sample
-Stanford / Purdue / accepted-offer numbers from the mock.
+Sources: `C:\Amogh-Saanvi-College\AMOGH-DASHBOARD-SOURCES.md`  
+Setup (what you still have to click): `C:\Amogh-Saanvi-College\AMOGH-SETUP.md`
 
 ## Editing
 
-Source of truth is the markdown vault at `C:\Amogh-Saanvi-College\Amogh`
-plus `DETAILED APPLICATION PLAN.xlsx` and `Amogh-Saanvi-University-List.xlsx`.
+The live due-by lists come from [application-plan](https://docs.google.com/spreadsheets/d/1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy/edit). Edit Tasks / Documents Needed there, then Refresh.
 
-Change what the site shows by editing `js/data.js`. `PUBLIC = true` in that
-file hides the SAT score and the Financial Aid page content.
+`PUBLIC = true` in `js/data.js` hides the SAT score and the Financial Aid page content.
 
 Every date marked `TBD-VERIFY` is unconfirmed. Do not invent a deadline
 to fill a blank.

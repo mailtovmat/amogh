@@ -2,12 +2,13 @@
 (function () {
   const PAGES = [
     {id:"overview", href:"index.html", label:"Dashboard"},
-    {id:"applications", href:"applications.html", label:"Applications"},
     {id:"progress", href:"progress.html", label:"Progress"},
     {id:"calendar", href:"calendar.html", label:"Calendar"},
-    {id:"people", href:"people.html", label:"People"},
-    {id:"docs", href:"docs.html", label:"Docs"},
-    {id:"financial", href:"financial.html", label:"Financial Aid"}
+    {id:"docs", href:"docs.html", label:"Docs-status"},
+    {id:"gdrive", href:"gdrive.html", label:"G-Drive"},
+    {id:"applications", href:"applications.html", label:"Universities"},
+    {id:"financial", href:"financial.html", label:"Financial Aid"},
+    {id:"people", href:"people.html", label:"People"}
   ];
 
   const MARK_COLOR = {Yes:"#0a0a0a", add:"#2f6feb", unsure:"#d4a017", review:"#8a8a8a"};
@@ -20,6 +21,16 @@
   const BREAK = [17,18,19];
   const T0 = parse("2026-08-01");
   const T1 = parse("2027-04-01");
+  const PLAN = {
+    fileId: "1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy",
+    editUrl: "https://docs.google.com/spreadsheets/d/1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy/edit",
+    tasksSheet: "Tasks",
+    docsSheet: "Documents Needed",
+    cacheKey: "amogh.plan.v1",
+    driveCacheKey: "amogh.gdrive.v1",
+    driveRoot: "1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
+    driveHref: "https://drive.google.com/drive/folders/1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd"
+  };
 
   const state = {
     page: "overview",
@@ -27,8 +38,15 @@
     owner: "all",
     showDone: false,
     calYear: 2026,
-    calMonth: 7
+    calMonth: 7,
+    calDay: null,
+    calKeysBound: false,
+    planMeta: null,
+    refreshErr: null,
+    refreshing: false,
+    gdrive: null
   };
+  let refreshInFlight = false;
 
   function todayStr() {
     return new Intl.DateTimeFormat("en-CA", {
@@ -192,6 +210,371 @@
       </div>`).join("");
   }
 
+  function headerKey(h) {
+    const n = String(h || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (!n) return null;
+    if (n === "status (%)" || n === "status(%)" || n === "status%") return "pct";
+    if (n === "date" || n === "by when") return "due";
+    if (n === "owner") return "owner";
+    if (n === "from whom") return "from";
+    if (n === "status") return "status";
+    if (n === "hard?" || n === "hard") return "hard";
+    if (n === "task" || n === "things needed") return "title";
+    if (n === "why" || n === "notes") return "why";
+    if (n === "id") return "id";
+    if (n === "region") return "region";
+    return n;
+  }
+  function cellVal(c) {
+    if (c == null) return "";
+    if (c.v != null) return c.v;
+    if (c.f != null) return c.f;
+    return "";
+  }
+  function sheetDate(v) {
+    if (v == null || v === "") return null;
+    const s = String(v).trim();
+    if (!s) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const gviz = /^Date\((\d+),(\d+),(\d+)/.exec(s);
+    if (gviz) return `${gviz[1]}-${pad(+gviz[2] + 1)}-${pad(+gviz[3])}`;
+    if (/tbd|verify|before |after |deadline|opens |remember |time consuming|needed well|fill it|in advance/i.test(s)) {
+      return null;
+    }
+    if (/[a-z]{3}/i.test(s) && /\d{4}/.test(s)) {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) return iso(d);
+    }
+    return null;
+  }
+  function sheetPct(v) {
+    if (v == null || v === "") return 0;
+    const n = parseFloat(String(v).replace("%", "").trim());
+    if (isNaN(n)) return 0;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+  function sheetOwner(v) {
+    const s = String(v || "").trim().toLowerCase();
+    if (!s) return null;
+    if (s === "saanvi" || s === "student" || s === "amogh") return "saanvi";
+    if (s === "father" || s === "parent" || s === "dad" || s === "mother" || s === "mum" || s === "mom") return "parent";
+    return s;
+  }
+  function sheetHard(v) {
+    const s = String(v || "").trim().toLowerCase();
+    return s === "yes" || s === "y" || s === "true" || s === "1" || s === "hard";
+  }
+  function sheetStatus(v, pct) {
+    const s = String(v || "").trim().toLowerCase();
+    if (pct >= 100 || s === "done" || s === "complete" || s === "completed") return "done";
+    if (s === "blocked") return "blocked";
+    return "todo";
+  }
+  function tableRows(table) {
+    const rows = (table && table.rows) || [];
+    if (!rows.length) return [];
+    const keys = (rows[0].c || []).map(c => headerKey(cellVal(c)));
+    const out = [];
+    for (let i = 1; i < rows.length; i++) {
+      const cells = rows[i].c || [];
+      const obj = {};
+      let empty = true;
+      keys.forEach((k, j) => {
+        if (!k) return;
+        const val = cellVal(cells[j]);
+        obj[k] = val;
+        if (String(val == null ? "" : val).trim()) empty = false;
+      });
+      if (!empty) out.push(obj);
+    }
+    return out;
+  }
+  function gvizTable(sheetName) {
+    return new Promise((resolve, reject) => {
+      const cb = "saanviGviz_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const script = document.createElement("script");
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("Timed out reading “" + sheetName + "”."));
+      }, 20000);
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cb] = function (resp) {
+        cleanup();
+        if (!resp || resp.status !== "ok" || !resp.table) {
+          const msg = resp && resp.errors && resp.errors[0] && resp.errors[0].detailed_message;
+          reject(new Error(msg || "Could not read the “" + sheetName + "” tab."));
+          return;
+        }
+        resolve(resp.table);
+      };
+      script.onerror = function () {
+        cleanup();
+        reject(new Error("Could not reach Google Sheets."));
+      };
+      script.src = "https://docs.google.com/spreadsheets/d/" + PLAN.fileId +
+        "/gviz/tq?tqx=responseHandler:" + cb + "&sheet=" + encodeURIComponent(sheetName);
+      document.head.appendChild(script);
+    });
+  }
+  function tasksFromSheet(rows) {
+    const prev = {};
+    (DATA.tasks || []).forEach(t => { if (t.id) prev[t.id] = t; });
+    return rows.map(r => {
+      const title = String(r.title || "").trim();
+      if (!title) return null;
+      const id = String(r.id || "").trim();
+      const pct = sheetPct(r.pct);
+      const status = sheetStatus(r.status, pct);
+      const due = sheetDate(r.due);
+      const old = id ? prev[id] : null;
+      return {
+        id: id || (old && old.id) || "",
+        t: title,
+        owner: sheetOwner(r.owner) || (old && old.owner) || null,
+        due,
+        status,
+        hard: sheetHard(r.hard),
+        why: String(r.why == null ? "" : r.why).trim(),
+        cat: (old && old.cat) || "Doc",
+        college: (old && old.college) || "General"
+      };
+    }).filter(Boolean);
+  }
+  function docsFromSheet(rows) {
+    let section = "Materials";
+    const docs = [];
+    rows.forEach(r => {
+      const title = String(r.title || "").trim();
+      const pctRaw = r.pct;
+      if (!title && String(pctRaw || "").trim().toUpperCase() === "SUGGESTED DOCS") {
+        section = "Suggested";
+        return;
+      }
+      if (!title) return;
+      const pct = sheetPct(pctRaw);
+      const due = sheetDate(r.due);
+      const note = String(r.why == null ? "" : r.why).trim();
+      const from = String(r.from || "").trim();
+      docs.push({
+        name: title,
+        kind: section === "Suggested" ? "Suggested" : (String(r.region || "").trim() || section),
+        due,
+        done: pct >= 100,
+        pct,
+        note: from && note ? from + " · " + note : (note || from)
+      });
+    });
+    return docs;
+  }
+  function applyPlan(tasks, docs, meta) {
+    if (tasks && tasks.length) DATA.tasks = tasks;
+    if (docs && docs.length) DATA.docs = docs;
+    state.planMeta = meta || null;
+  }
+  function loadPlanCache() {
+    try {
+      const raw = localStorage.getItem(PLAN.cacheKey);
+      if (!raw) return;
+      const c = JSON.parse(raw);
+      if (!c || (!c.tasks && !c.docs)) return;
+      applyPlan(c.tasks, c.docs, c.meta);
+    } catch (e) { /* keep shipped data.js */ }
+  }
+  function savePlanCache(tasks, docs, meta) {
+    try {
+      localStorage.setItem(PLAN.cacheKey, JSON.stringify({ tasks, docs, meta }));
+    } catch (e) { /* private mode / quota */ }
+  }
+  function applyDrive(payload) {
+    if (payload && Array.isArray(payload.tree)) state.gdrive = payload;
+  }
+  function loadDriveCache() {
+    try {
+      const raw = localStorage.getItem(PLAN.driveCacheKey);
+      if (!raw) return;
+      const c = JSON.parse(raw);
+      if (c && Array.isArray(c.tree)) applyDrive(c);
+    } catch (e) { /* keep shipped gdrive-data.js */ }
+  }
+  function saveDriveCache(payload) {
+    try { localStorage.setItem(PLAN.driveCacheKey, JSON.stringify(payload)); }
+    catch (e) { /* private mode / quota */ }
+  }
+  function skipDriveName(name) {
+    const lower = String(name || "").toLowerCase();
+    return !lower || lower === ".keep" || lower === "config-keys.txt" || lower.endsWith(".md");
+  }
+  function driveKind(name, href, folder) {
+    if (folder) return "Folder";
+    const n = String(name || "").toLowerCase();
+    if (n.endsWith(".xlsx") || n.endsWith(".xls") || n.endsWith(".csv") || /spreadsheet/.test(href || "")) return "Spreadsheet";
+    if (n.endsWith(".docx") || n.endsWith(".doc")) return "Word";
+    if (n.endsWith(".html") || n.endsWith(".htm")) return "HTML";
+    if (n.endsWith(".pdf")) return "PDF";
+    if (/\.(png|jpe?g|gif|webp)$/.test(n)) return "Image";
+    return "File";
+  }
+  function cleanDriveName(raw) {
+    return String(raw || "").replace(/!\[[^\]]*\]\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+  }
+  function parseDriveFolderPage(text) {
+    const items = [];
+    const lines = String(text || "").split(/\r?\n/);
+    const hrefRe = /\((https:\/\/(?:drive|docs)\.google\.com\/(?:drive\/folders|file\/d|spreadsheets\/d|document\/d)\/[a-zA-Z0-9_-]+[^)]*)\)/g;
+    for (let i = 0; i < lines.length; i++) {
+      hrefRe.lastIndex = 0;
+      let m;
+      while ((m = hrefRe.exec(lines[i]))) {
+        const href = m[1];
+        const name = cleanDriveName(lines[i].slice(0, m.index)).replace(/^\[/, "").replace(/\]$/, "").trim();
+        if (!name || name === "TITLE") continue;
+        let updated = "—";
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          const t = lines[j].trim();
+          if (!t) continue;
+          if (t.startsWith("[") || t.startsWith("![")) break;
+          updated = t;
+          break;
+        }
+        const folder = /\/folders\//.test(href);
+        const idm = /\/(?:folders|d)\/([a-zA-Z0-9_-]+)/.exec(href);
+        items.push({
+          name, href, folder,
+          id: idm ? idm[1] : "",
+          kind: driveKind(name, href, folder),
+          updated
+        });
+      }
+    }
+    return items;
+  }
+  async function fetchDriveFolderText(id) {
+    const src = "https://drive.google.com/embeddedfolderview?id=" + encodeURIComponent(id);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch("https://r.jina.ai/" + src, { signal: ctrl.signal, referrerPolicy: "origin" });
+      if (!res.ok) throw new Error("Could not read the Drive folder.");
+      return await res.text();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  async function mapPool(items, limit, fn) {
+    const out = new Array(items.length);
+    let i = 0;
+    async function worker() {
+      while (i < items.length) {
+        const idx = i++;
+        out[idx] = await fn(items[idx]);
+      }
+    }
+    const n = Math.max(1, Math.min(limit, items.length || 1));
+    await Promise.all(Array.from({ length: items.length ? n : 0 }, worker));
+    return out;
+  }
+  async function walkDriveFolder(folderId, seen) {
+    if (seen.has(folderId)) return [];
+    seen.add(folderId);
+    const items = parseDriveFolderPage(await fetchDriveFolderText(folderId));
+    const files = [];
+    const folders = [];
+    items.forEach(item => {
+      if (skipDriveName(item.name)) return;
+      if (item.folder && item.id) folders.push(item);
+      else if (!item.folder) files.push(Object.assign({}, item, { children: [] }));
+    });
+    const nested = await mapPool(folders, 4, async folder => {
+      const children = await walkDriveFolder(folder.id, seen);
+      if (!children.length) return null;
+      return {
+        name: folder.name, kind: "Folder", folder: true,
+        updated: folder.updated, href: folder.href, children
+      };
+    });
+    const nodes = files.concat(nested.filter(Boolean));
+    nodes.sort((a, b) => (a.folder === b.folder ? a.name.localeCompare(b.name) : a.folder ? -1 : 1));
+    return nodes;
+  }
+  function countDriveFiles(nodes) {
+    return (nodes || []).reduce((n, node) => n + (node.folder ? countDriveFiles(node.children) : 1), 0);
+  }
+  async function fetchDriveListing() {
+    const tree = await walkDriveFolder(PLAN.driveRoot, new Set());
+    return {
+      rootName: "Amogh",
+      rootHref: PLAN.driveHref,
+      fetched: planWhenLabel(),
+      fileCount: countDriveFiles(tree),
+      tree
+    };
+  }
+  function planWhenLabel() {
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: DATA.tz, day: "numeric", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    }).format(new Date()) + " IST";
+  }
+  async function refreshPlan() {
+    if (refreshInFlight) return;
+    refreshInFlight = true;
+    state.refreshing = true;
+    state.refreshErr = null;
+    const btn = document.querySelector("[data-refresh]");
+    if (btn) { btn.setAttribute("aria-busy", "true"); btn.textContent = "Refreshing…"; }
+    try {
+      const [taskRes, docRes, driveRes] = await Promise.allSettled([
+        gvizTable(PLAN.tasksSheet),
+        gvizTable(PLAN.docsSheet),
+        fetchDriveListing()
+      ]);
+      if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
+        throw new Error((taskRes.reason && taskRes.reason.message) ||
+          (docRes.reason && docRes.reason.message) || "Could not read application-plan.");
+      }
+      const tasks = tasksFromSheet(tableRows(taskRes.value));
+      const docs = docsFromSheet(tableRows(docRes.value));
+      if (!tasks.length && !docs.length) {
+        throw new Error("The Tasks and Documents Needed tabs came back empty. Nothing was changed.");
+      }
+      const meta = {
+        when: planWhenLabel(),
+        tasks: tasks.length,
+        docs: docs.length,
+        source: "application-plan"
+      };
+      applyPlan(tasks, docs, meta);
+      savePlanCache(tasks, docs, meta);
+      if (driveRes.status === "fulfilled") {
+        applyDrive(driveRes.value);
+        saveDriveCache(driveRes.value);
+        meta.drive = driveRes.value.fileCount;
+        state.planMeta = meta;
+      } else if (!state.gdrive && typeof GDRIVE === "undefined") {
+        state.refreshErr = (driveRes.reason && driveRes.reason.message) || "Drive listing could not be refreshed.";
+      }
+    } catch (err) {
+      state.refreshErr = (err && err.message) || "Refresh failed.";
+    }
+    refreshInFlight = false;
+    state.refreshing = false;
+    render();
+  }
+  function refreshBanner() {
+    if (state.refreshErr) {
+      return `<div class="refresh-status is-err" role="status">Refresh failed: ${esc(state.refreshErr)} The <a href="${esc(PLAN.editUrl)}" target="_blank" rel="noopener noreferrer">application-plan</a> file must stay shared as <em>Anyone with the link can view</em>.</div>`;
+    }
+    if (state.planMeta) {
+      const driveBit = state.planMeta.drive != null ? ` · Drive ${state.planMeta.drive} files` : "";
+      return `<div class="refresh-status" role="status">Showing ${esc(state.planMeta.source)} · ${state.planMeta.tasks} tasks · ${state.planMeta.docs} documents${driveBit} · ${esc(state.planMeta.when)}</div>`;
+    }
+    return "";
+  }
+
   function shell(inner) {
     const today = todayStr();
     const dd = parse(today).toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
@@ -210,7 +593,9 @@
       </header>
       <nav class="tabs" aria-label="Sections">
         ${PAGES.map(p => `<a class="tabbtn" href="${p.href}" ${p.id===state.page?'aria-current="page"':""}>${p.label}</a>`).join("")}
+        <button type="button" class="tabbtn refresh-btn" data-refresh ${state.refreshing?'aria-busy="true"':""} title="Reload Tasks and Documents Needed from the application-plan spreadsheet">${state.refreshing?"Refreshing…":"Refresh"}</button>
       </nav>
+      ${refreshBanner()}
       ${inner}
       <footer>
         <div>${esc(DATA.studentName)}'s College Tracker · redesigned 18 Aug 2026</div>
@@ -242,11 +627,6 @@
       {value: overdue.length, label:"Overdue tasks", hint:`${soon.length} due within 2 weeks`},
       {value: add.length + unsure.length, label:"Still undecided", hint:`${add.length} add · ${unsure.length} unsure · cut by 31 Aug`}
     ];
-
-    const deadlineItems = open
-      .map(t => ({due:t.due, title:t.t, college:t.college, done:false, overdue: daysUntil(t.due) < 0 || !!t.overdueFrom}))
-      .sort((a,b) => parse(a.due) - parse(b.due))
-      .slice(0, 8);
 
     return `<div class="stack">
       <div class="note">${DATA.notes && DATA.notes.overview ? DATA.notes.overview : ""}</div>
@@ -289,83 +669,65 @@
           <div class="label" style="text-align:center;margin-top:12px">${planDone} of ${planTot} vault tasks resolved · ${overdue.length} overdue</div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-head">
-          <h2>Deadlines</h2>
-          <span class="label">Overdue &amp; upcoming, from the vault — not from a sample file</span>
-        </div>
-        ${deadlineItems.map(item => {
-          const b = badge(item.due, false);
-          return `<div class="row">
-            <div class="accent" style="background:${item.overdue?"var(--ink)":"transparent"}"></div>
-            <div class="daybox">
-              <div class="n">${parse(item.due).getDate()}</div>
-              <div class="caption" style="margin-top:2px">${mon(item.due)}</div>
-            </div>
-            <div class="grow">
-              <div style="font-weight:600;font-size:15px">${esc(item.title)}</div>
-              <div class="label">${esc(item.college === "General" ? "General" : item.college)}</div>
-            </div>
-            <span class="${b.cls}">${esc(b.rel)}</span>
-          </div>`;
-        }).join("")}
-      </div>
-      ${taskLists()}
+      ${dueBuckets()}
     </div>`;
   }
 
-  function taskLists() {
-    const vis = t => state.owner === "all" || t.owner === state.owner;
-    const open = DATA.tasks.filter(t => t.status !== "done" && vis(t));
-    const over = open.filter(t => t.overdueFrom || daysUntil(t.due) < 0);
-    const soon = open.filter(t => !over.includes(t) && t.status !== "blocked" && daysUntil(t.due) <= 14);
-    const later = open.filter(t => !over.includes(t) && !soon.includes(t));
-    const done = DATA.tasks.filter(t => t.status === "done" && vis(t));
-    const owners = [["all","All"],["parent","Father"],["amogh","Amogh"]];
-    function block(title, arr) {
+  function planItems() {
+    const tasks = DATA.tasks.map(t => ({
+      title: t.t, due: t.due, source: "Tasks", owner: t.owner, status: t.status,
+      why: t.why, pct: t.status === "done" ? 100 : 0, hard: !!t.hard, overdueFrom: t.overdueFrom
+    }));
+    const docs = (DATA.docs || []).map(d => ({
+      title: d.name, due: d.due, source: "documents needed", owner: null,
+      status: d.done ? "done" : "todo", why: d.note, pct: d.pct == null ? (d.done ? 100 : 0) : d.pct,
+      hard: false, overdueFrom: null
+    }));
+    return tasks.concat(docs);
+  }
+
+  function dueBuckets() {
+    const items = planItems().filter(i => i.status !== "done" && i.due);
+    const over = items.filter(i => i.overdueFrom || daysUntil(i.due) < 0);
+    const thisWeek = items.filter(i => !over.includes(i) && daysUntil(i.due) >= 0 && daysUntil(i.due) <= 7);
+    const nextWeek = items.filter(i => daysUntil(i.due) >= 8 && daysUntil(i.due) <= 14);
+    const next2 = items.filter(i => daysUntil(i.due) >= 15 && daysUntil(i.due) <= 28);
+    function block(title, hint, arr) {
       return `<div class="card">
-        <div class="card-head"><h2>${title}</h2><span class="label">${arr.length}</span></div>
-        ${arr.length ? arr.sort((a,b)=>parse(a.due)-parse(b.due)).map(taskRow).join("") :
+        <div class="card-head"><h2>${title}</h2><span class="label">${arr.length} · ${hint}</span></div>
+        ${arr.length ? arr.sort((a,b)=>parse(a.due)-parse(b.due)).map(dueRow).join("") :
           `<div class="label" style="padding:8px 0">Nothing here.</div>`}
       </div>`;
     }
     return `
-      <div class="filters" style="align-items:center">
-        <span class="caption">Owner</span>
-        ${owners.map(([v,l]) => `<button class="chip" data-owner="${v}" aria-pressed="${state.owner===v}">${l}</button>`).join("")}
-        <button class="chip" data-done="1" aria-pressed="${state.showDone}">${state.showDone?"Hide resolved":"Show resolved"}</button>
-      </div>
-      ${block("Overdue", over)}
-      ${block("Next 14 days", soon)}
-      ${block("Later & blocked", later)}
-      ${state.showDone ? block("Resolved", done) : ""}`;
+      <div class="note">Due-by lists come from the <strong>application-plan</strong> spreadsheet: <em>Tasks</em> and <em>documents needed</em>.</div>
+      ${block("Overdue", "past due", over)}
+      ${block("This week", "due in 0–7 days", thisWeek)}
+      ${block("Next week", "due in 8–14 days", nextWeek)}
+      ${block("Next 2 weeks", "due in 15–28 days", next2)}`;
   }
 
-  function taskRow(t) {
-    const dd = daysUntil(t.due);
-    const isOver = t.status !== "done" && (t.overdueFrom || dd < 0);
-    const b = t.status === "done" ? {rel:"resolved", cls:"badge badge-done"}
-      : t.status === "blocked" ? {rel:"blocked / parked", cls:"badge badge-ghost"}
-      : isOver ? {rel:"overdue", cls:"badge badge-over"}
-      : dd <= 7 ? {rel:"this week", cls:"badge badge-soon"}
-      : {rel:"scheduled", cls:"badge badge-ghost"};
-    const late = t.status === "done" ? "—"
-      : isOver ? (t.overdueFrom ? Math.abs(daysUntil(t.overdueFrom))+"d late" : Math.abs(dd)+"d late")
-      : "in "+dd+"d";
+  function dueRow(i) {
+    const dd = daysUntil(i.due);
+    const isOver = i.overdueFrom || dd < 0;
     return `<div class="row" style="align-items:flex-start">
-      <div class="markbox ${t.status==="done"?"on":""}" aria-hidden="true"></div>
+      <div class="daybox">
+        <div class="n">${parse(i.due).getDate()}</div>
+        <div class="caption" style="margin-top:2px">${mon(i.due)}</div>
+      </div>
       <div class="grow">
-        <div style="font-weight:600;font-size:14px${t.status==="done"?";text-decoration:line-through;color:var(--n-400)":""}">${esc(t.t)}${t.hard?' <span class="badge badge-over" style="margin-left:6px">hard cutoff</span>':""}</div>
+        <div style="font-weight:600;font-size:14px">${esc(i.title)}</div>
         <div class="label" style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <span class="badge badge-ghost">${esc(ownerName(t.owner))}</span>
-          <span class="${b.cls}">${b.rel}</span>
-          <span class="mono" style="font-size:11px;color:var(--n-400)">${esc(t.id)}</span>
+          <span class="badge badge-ghost">${esc(i.source)}</span>
+          ${i.owner?`<span class="badge badge-ghost">${esc(ownerName(i.owner))}</span>`:""}
+          ${i.hard?'<span class="badge badge-over">hard</span>':""}
         </div>
-        <div class="label" style="margin-top:4px;max-width:78ch">${esc(t.why||"")}</div>
+        <div class="label" style="margin-top:4px;max-width:78ch">${esc(i.why||"")}</div>
       </div>
       <div style="text-align:right;white-space:nowrap">
-        <div class="label">${fmt(t.due)}</div>
-        <div style="font-size:12.5px;font-weight:650;font-variant-numeric:tabular-nums;color:${isOver?"var(--ink)":"var(--n-400)"}">${late}</div>
+        <div class="label">${fmt(i.due)}</div>
+        <div style="font-size:12.5px;font-weight:650">${isOver?(Math.abs(dd)+"d late"):"in "+dd+"d"}</div>
+        <div class="label">${i.pct}%</div>
       </div>
     </div>`;
   }
@@ -386,7 +748,7 @@
       <div class="note">${DATA.notes && DATA.notes.applications ? DATA.notes.applications : ""}</div>
       <div class="card">
         <div class="card-head">
-          <h2>Applications</h2>
+          <h2>Universities</h2>
           <div class="filters">${filters.map(f =>
             `<button class="chip" data-filter="${f}" aria-pressed="${state.filter===f}">${f}</button>`
           ).join("")}</div>
@@ -498,10 +860,6 @@
 
   function renderProgress(schools) {
     const yes = schools.filter(s => s.mark === "Yes");
-    const immediate = DATA.tasks
-      .filter(t => t.status !== "done")
-      .sort((a,b) => parse(a.due) - parse(b.due))
-      .slice(0, 8);
     return `<div class="stack">
       <div class="card">
         <div class="card-head">
@@ -516,20 +874,6 @@
           <span class="label"><span style="width:14px;height:12px;border-radius:2px;background:#C00000;display:inline-block"></span> ★ Submit target</span>
           <span class="label"><span style="width:2px;height:14px;background:var(--ink);display:inline-block"></span> Today</span>
         </div>
-      </div>
-      <div class="card">
-        <h2 style="margin-bottom:var(--s-4)">Immediate Deliverables</h2>
-        ${immediate.map(t => {
-          const b = badge(t.due, false);
-          return `<div class="row">
-            <span class="${catClass(t.cat)}">${esc(t.cat)}</span>
-            <div class="grow">
-              <div style="font-weight:600;font-size:14px">${esc(t.t)}</div>
-              <div class="label">${esc(ownerName(t.owner))} · ${esc(t.college)}</div>
-            </div>
-            <span class="${b.cls}">${esc(b.rel)}</span>
-          </div>`;
-        }).join("")}
       </div>
       <div class="grid-cards">${yes.map(s => `
         <div class="card">
@@ -619,105 +963,117 @@
     function push(ds, ev) { (map[ds] = map[ds] || []).push(ev); }
     DATA.tasks.forEach(t => {
       if (!t.due) return;
-      push(t.due, {title:t.t, done:t.status==="done", overdue:t.status!=="done" && daysUntil(t.due)<0, track:t.college==="UK"?"uk":"us"});
+      push(t.due, {
+        title:t.t, detail:t.why||"", owner:ownerName(t.owner),
+        done:t.status==="done", overdue:t.status!=="done" && daysUntil(t.due)<0,
+        track:t.college==="UK"?"uk":"us", hard:!!t.hard, kind:"Task", id:t.id
+      });
     });
     DATA.events.forEach(e => {
-      push(e.d, {title:e.short||e.l, done:false, overdue:daysUntil(e.d)<0, track:e.track, hard:e.hard});
+      push(e.d, {
+        title:e.l, detail:e.note||"", owner:e.tz||"",
+        done:false, overdue:daysUntil(e.d)<0, track:e.track, hard:!!e.hard, kind:"Deadline"
+      });
+    });
+    (DATA.docs || []).forEach(d => {
+      if (!d.due) return;
+      const done = !!(d.done || (d.pct != null && d.pct >= 100));
+      push(d.due, {
+        title: d.name, detail: d.note || "", owner: "",
+        done, overdue: !done && daysUntil(d.due) < 0,
+        track: "us", hard: false, kind: d.kind || "documents needed"
+      });
     });
     return map;
   }
 
-  function monthCalendar() {
-    const y = state.calYear, m = state.calMonth;
+  function pillStyle(e) {
+    if (e.done) return "background:var(--n-100);color:var(--n-400);text-decoration:line-through";
+    if (e.track==="uk") return "background:var(--n-400);color:#fff";
+    if (e.hard || e.overdue) return "background:var(--ink);color:#fff";
+    return "background:#fff;color:var(--ink);border:1px solid var(--n-300)";
+  }
+
+  function monthCalendar(y, m) {
     const startDay = new Date(y,m,1).getDay();
     const dim = new Date(y,m+1,0).getDate();
     const evs = eventsByDate();
     const wd = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
     const cells = [];
-    for (let i=0;i<startDay;i++) cells.push(`<div></div>`);
+    for (let i=0;i<startDay;i++) cells.push(`<div class="cal-cell cal-pad" aria-hidden="true"></div>`);
     for (let d=1; d<=dim; d++) {
       const ds = `${y}-${pad(m+1)}-${pad(d)}`;
       const list = evs[ds] || [];
       const isToday = ds === todayStr();
-      const pills = list.slice(0,2).map(e => {
-        let st;
-        if (e.done) st = "background:var(--n-100);color:var(--n-400);text-decoration:line-through";
-        else if (e.track==="uk") st = "background:var(--n-400);color:#fff";
-        else if (e.hard || e.overdue) st = "background:var(--ink);color:#fff";
-        else st = "background:#fff;color:var(--ink);border:1px solid var(--n-300)";
-        return `<div class="pill-ev" style="${st}">${esc(e.title)}</div>`;
-      });
-      if (list.length > 2) pills.push(`<div class="label" style="font-size:10px;padding-left:3px">+${list.length-2}</div>`);
-      cells.push(`<div class="cal-cell${isToday?" today":""}"><div class="cal-num">${d}</div>${pills.join("")}</div>`);
+      const isSel = state.calDay === ds;
+      const pills = list.slice(0,2).map(e => `<div class="pill-ev" style="${pillStyle(e)}">${esc(e.title)}</div>`);
+      if (list.length > 2) pills.push(`<div class="label" style="font-size:10px;padding-left:3px">+${list.length-2} more</div>`);
+      const cls = `cal-cell${list.length?" has-ev":""}${isToday?" today":""}${isSel?" is-sel":""}`;
+      if (!list.length) {
+        cells.push(`<div class="${cls}"><div class="cal-num">${d}</div></div>`);
+        continue;
+      }
+      cells.push(`<button type="button" class="${cls}" data-day="${ds}" aria-pressed="${isSel?"true":"false"}">
+        <div class="cal-num">${d}</div>${pills.join("")}
+      </button>`);
     }
-    return `<div>
+    return `<div class="cal-month">
       <div class="cal-head">${wd.map(d=>`<div class="cal-wd">${d}</div>`).join("")}</div>
       <div class="cal-grid">${cells.join("")}</div>
     </div>`;
   }
 
+  function closeCalDay() {
+    if (!state.calDay) return;
+    state.calDay = null;
+    render();
+  }
+
+  function renderDayDetail() {
+    const ds = state.calDay;
+    if (!ds) return "";
+    const list = eventsByDate()[ds] || [];
+    const heading = parse(ds).toLocaleDateString("en-GB", {weekday:"long", day:"numeric", month:"long", year:"numeric"});
+    const closeBtn = `<button type="button" class="cal-close" data-cal-close aria-label="Close date details">Close</button>`;
+    if (!list.length) {
+      return `<div class="cal-detail is-empty" id="cal-detail" role="dialog" aria-label="Date details">
+        <div class="cal-detail-bar">
+          <div class="caption">${esc(heading)}</div>
+          ${closeBtn}
+        </div>
+        <div class="label" style="margin-top:6px">No items on this date.</div>
+      </div>`;
+    }
+    return `<div class="cal-detail" id="cal-detail" role="dialog" aria-label="Date details">
+      <div class="cal-detail-bar">
+        <div>
+          <h2>${esc(heading)}</h2>
+          <div class="label" style="margin-top:2px">${list.length} item${list.length===1?"":"s"}</div>
+        </div>
+        ${closeBtn}
+      </div>
+      ${list.map(e => `
+        <div class="cal-detail-item">
+          <div style="font-weight:700;font-size:14px">${esc(e.title)}</div>
+          <div class="label" style="margin-top:3px">${esc(e.kind)}${e.owner?" · "+esc(e.owner):""}${e.hard?" · hard cutoff":""}${e.overdue?" · overdue":""}${e.done?" · done":""}</div>
+          ${e.detail?`<div style="margin-top:6px;font-size:14px;color:var(--ink-soft)">${esc(e.detail)}</div>`:""}
+        </div>`).join("")}
+    </div>`;
+  }
+
   function renderCalendar() {
-    const monthLabel = new Date(state.calYear, state.calMonth, 1).toLocaleDateString("en-US",{month:"long", year:"numeric"});
-    const agenda = DATA.tasks.slice().sort((a,b) => parse(a.due)-parse(b.due)).map(t => {
-      const b = badge(t.due, t.status==="done");
-      return {t, b};
-    });
-    const dated = DATA.events.slice().sort((a,b)=>parse(a.d)-parse(b.d));
+    const months = [7,8,9,10,11]; // Aug–Dec 2026
     return `<div class="stack">
       ${renderLaneTimeline()}
-      <div style="display:flex;flex-wrap:wrap;gap:var(--s-4);align-items:start">
-        <div class="card" style="flex:2 1 340px">
-          <div class="card-head">
-            <h2>${esc(monthLabel)}</h2>
-            <div style="display:flex;gap:8px">
-              <button class="navbtn" data-cal="-1" aria-label="Previous month">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-              </button>
-              <button class="navbtn" data-cal="1" aria-label="Next month">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
-            </div>
-          </div>
-          ${monthCalendar()}
-        </div>
-        <div class="card" style="flex:1 1 260px">
-          <h2 style="margin-bottom:4px">Agenda</h2>
-          <span class="label">Vault tasks, chronological</span>
-          <div style="margin-top:12px">${agenda.map(({t,b}) => `
-            <div class="row">
-              <div class="daybox" style="width:40px">
-                <div class="n" style="font-size:16px${t.status==="done"?";color:var(--n-400)":""}">${parse(t.due).getDate()}</div>
-                <div class="caption">${mon(t.due)}</div>
-              </div>
-              <div class="grow">
-                <div style="font-weight:600;font-size:14px${t.status==="done"?";text-decoration:line-through;color:var(--n-400)":""}">${esc(t.t)}</div>
-                <div class="label">${esc(ownerName(t.owner))}</div>
-              </div>
-              <span class="${b.cls}">${esc(b.rel)}</span>
-            </div>`).join("")}</div>
-        </div>
-      </div>
-      <div class="card">
-        <h2 style="margin-bottom:var(--s-4)">Every dated item</h2>
-        <div class="tbwrap"><table>
-          <thead><tr>
-            <th class="caption">Date (IST)</th><th class="caption">Days</th><th class="caption">Item</th>
-            <th class="caption">Track</th><th class="caption">Authoritative time</th><th class="caption">Hard?</th>
-          </tr></thead>
-          <tbody>${dated.map(e => {
-            const dd = daysUntil(e.d);
-            const lane = (DATA.lanes.find(l => l.k===e.track)||{}).n || e.track;
-            return `<tr${e.track==="uk"?' class="dim"':""}>
-              <td class="num">${fmt(e.d)}</td>
-              <td class="num">${dd<0?"past":"in "+dd+"d"}</td>
-              <td>${esc(e.l)}${e.note?`<div class="label">${esc(e.note)}</div>`:""}</td>
-              <td>${esc(lane)}</td>
-              <td class="label">${esc(e.tz)}</td>
-              <td>${e.hard?'<span class="badge badge-over">hard</span>':'<span class="badge badge-ghost">target</span>'}</td>
-            </tr>`;
-          }).join("")}</tbody>
-        </table></div>
-      </div>
+      <div class="note">Date cells stay one size. Click a day that has text to read it above the months, then <strong>Close</strong> to go back to the calendar. Vault tasks also live on the <strong>Tasks</strong> tab of the application-plan spreadsheet.</div>
+      ${renderDayDetail()}
+      ${months.map(m => {
+        const label = new Date(2026, m, 1).toLocaleDateString("en-US",{month:"long", year:"numeric"});
+        return `<div class="card">
+          <div class="card-head"><h2>${esc(label)}</h2><span class="label">Same-size cells</span></div>
+          ${monthCalendar(2026, m)}
+        </div>`;
+      }).join("")}
     </div>`;
   }
 
@@ -770,48 +1126,80 @@
   }
 
   function renderDocs() {
-    const done = DATA.docs.filter(d => d.done).length;
+    const docs = DATA.docs || [];
+    const avg = docs.length ? Math.round(docs.reduce((s,d)=>s+(d.pct==null?(d.done?100:0):d.pct),0)/docs.length) : 0;
     return `<div class="stack">
-      <div class="card">
-        <div class="card-head">
-          <h2>Materials Needed</h2>
-          <span class="label">From the family plan spreadsheet — gather before the first deadline</span>
+      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on the application-plan spreadsheet.</div>
+      <div class="kpis">
+        <div class="kpi">
+          <div class="val">${avg}<span class="unit">%</span></div>
+          <div class="caption" style="margin-top:8px">Average progress</div>
+          <div class="label" style="margin-top:4px">${docs.filter(d=>(d.pct||0)>=100||d.done).length} of ${docs.length} complete</div>
         </div>
-        <div class="tbwrap"><table>
-          <thead><tr>
-            <th class="caption">Item</th><th class="caption">From Whom</th>
-            <th class="caption">Status</th><th class="caption">Due</th>
-          </tr></thead>
-          <tbody>${DATA.materials.map(m => {
-            const b = badge(m.due, m.status==="Ready" || m.status==="Received");
-            const ss = (m.status==="Ready"||m.status==="Received") ? "badge badge-ink"
-              : m.status==="Not started" ? "badge badge-ghost" : "badge badge-soon";
-            return `<tr>
-              <td><div style="font-weight:600">${esc(m.item)}</div><div class="label">${esc(m.note)}</div></td>
-              <td class="nowrap">${esc(m.from)}</td>
-              <td><span class="${ss}">${esc(m.status)}</span></td>
-              <td class="nowrap"><div style="font-weight:600">${m.due?dateLabel(m.due):"Before 1st deadline"}</div><span class="${b.cls}">${m.due?esc(b.rel):""}</span></td>
-            </tr>`;
-          }).join("")}</tbody>
-        </table></div>
       </div>
       <div class="card">
         <div class="card-head">
-          <h2>Documents</h2>
-          <span class="label">${done} of ${DATA.docs.length} ready</span>
+          <h2>Docs-status</h2>
+          <span class="label">Each item’s %</span>
         </div>
-        ${DATA.docs.map(d => {
-          const b = badge(d.due, d.done);
+        ${docs.map(d => {
+          const pct = d.pct == null ? (d.done ? 100 : 0) : d.pct;
+          const b = badge(d.due, d.done || pct>=100);
           return `<div class="listrow">
-            <span class="markbox ${d.done?"on":""}"></span>
             <div class="grow" style="flex:1 1 220px">
-              <div style="font-weight:600;font-size:15px" class="${d.done?"strike":""}">${esc(d.name)}</div>
-              <div class="label">${esc(d.note)}</div>
+              <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline">
+                <div style="font-weight:600;font-size:15px">${esc(d.name)}</div>
+                <div style="font-family:var(--font-display);font-weight:800;font-size:22px">${pct}%</div>
+              </div>
+              <div class="bar-track" style="height:8px;margin:8px 0">
+                <div class="bar-fill" style="width:${pct}%;background:var(--ink)"></div>
+              </div>
+              <div class="label">${esc(d.kind)} · ${esc(d.note||"")}</div>
             </div>
-            <span class="cat cat-doc">${esc(d.kind)}</span>
             <span class="${b.cls}">${esc(b.rel)}</span>
           </div>`;
         }).join("")}
+      </div>
+    </div>`;
+  }
+
+  function driveIcon(folder) {
+    if (folder) {
+      return `<svg class="drive-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h5l2 2h11v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7z"/></svg>`;
+    }
+    return `<svg class="drive-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>`;
+  }
+
+  function driveRows(nodes, depth) {
+    return (nodes || []).map(n => {
+      const pad = 8 + depth * 22;
+      const row = `<div class="drive-row">
+        <div class="drive-name" style="padding-left:${pad}px">
+          ${driveIcon(n.folder)}
+          <a href="${esc(n.href)}" target="_blank" rel="noopener noreferrer">${esc(n.name)}</a>
+        </div>
+        <div class="label">${esc(n.kind)}</div>
+        <div class="label nowrap">${esc(n.updated)}</div>
+      </div>`;
+      return row + driveRows(n.children, depth + 1);
+    }).join("");
+  }
+
+  function renderGdrive() {
+    const G = state.gdrive || ((typeof GDRIVE !== "undefined") ? GDRIVE : {tree:[], fileCount:0, fetched:"—", rootHref:PLAN.driveHref, rootName:"Amogh"});
+    return `<div class="stack">
+      <div class="note">Listing of the Amogh Google Drive vault. Markdown notes are hidden. Updated ${esc(G.fetched)}. <a href="${esc(G.rootHref || PLAN.driveHref)}" target="_blank" rel="noopener noreferrer">Open the folder in Drive</a>.</div>
+      <div class="card">
+        <div class="card-head">
+          <h2>G-Drive</h2>
+          <span class="label">${G.fileCount} file${G.fileCount===1?"":"s"} · folders shown only when they hold a visible file</span>
+        </div>
+        <div class="drive-head">
+          <div class="caption">Name</div>
+          <div class="caption">Kind</div>
+          <div class="caption">Last updated</div>
+        </div>
+        ${G.tree && G.tree.length ? driveRows(G.tree, 0) : `<div class="label" style="padding:14px 12px">No non-markdown files in the vault yet.</div>`}
       </div>
     </div>`;
   }
@@ -889,6 +1277,7 @@
     else if (state.page === "calendar") inner = renderCalendar();
     else if (state.page === "people") inner = renderPeople();
     else if (state.page === "docs") inner = renderDocs();
+    else if (state.page === "gdrive") inner = renderGdrive();
     else if (state.page === "financial") inner = renderFinancial(schools);
     root.innerHTML = shell(inner);
     bind();
@@ -915,6 +1304,26 @@
         render();
       });
     });
+    document.querySelectorAll("[data-day]").forEach(el => {
+      el.addEventListener("click", () => {
+        const ds = el.getAttribute("data-day");
+        state.calDay = state.calDay === ds ? null : ds;
+        render();
+        const box = document.getElementById("cal-detail");
+        if (box) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+    document.querySelectorAll("[data-cal-close]").forEach(el => {
+      el.addEventListener("click", () => { closeCalDay(); });
+    });
+    if (!state.calKeysBound) {
+      state.calKeysBound = true;
+      document.addEventListener("keydown", ev => {
+        if (ev.key === "Escape" && state.page === "calendar") closeCalDay();
+      });
+    }
+    const refreshBtn = document.querySelector("[data-refresh]");
+    if (refreshBtn) refreshBtn.addEventListener("click", () => { refreshPlan(); });
     addEventListener("resize", () => { if (state.page === "calendar") packRail(); });
   }
 
@@ -923,10 +1332,14 @@
     state.page = (root && root.dataset.page) || "overview";
     const t = parse(todayStr());
     if (t) { state.calYear = t.getFullYear(); state.calMonth = t.getMonth(); }
+    loadPlanCache();
+    loadDriveCache();
     if (DATA.PUBLIC) {
       DATA.tasks.forEach(t => { if (t.why) t.why = t.why.replace(/1510/g, "the score on file"); });
     }
+    state.refreshing = true;
     render();
+    refreshPlan();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
