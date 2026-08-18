@@ -10,7 +10,7 @@ const DATA = {
   studentName: "Amogh",
   classYear: "Class of 2027",
   entry: "Fall 2027",
-  sibling: {name:"Saanvi", href:"https://mailtovmat.github.io/saanvi/"},
+
   notes: {
     overview: "<strong>This is not a mock with invented acceptances.</strong> Nothing has been submitted. The list is a brainstorm — 16 Yes, 13 add, 9 unsure. Cutting it is the decision that makes the term possible or impossible.",
     applications: "<strong>16 Yes is still a brainstorm if the 13 add stay.</strong> Boston University is on the Excel as add and was missing from the previous dashboard. Northwestern is not an Amogh Yes — see OQ-05.",

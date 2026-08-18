@@ -203,7 +203,7 @@
           </div>
           <div>
             <h1>College Application Tracker</h1>
-            <div class="label" style="margin-top:2px">${esc(DATA.studentName)} · ${esc(DATA.classYear)} · ${esc(DATA.entry)}${DATA.sibling?` · <a href="${esc(DATA.sibling.href)}">${esc(DATA.sibling.name)}</a>`:""}</div>
+            <div class="label" style="margin-top:2px">${esc(DATA.studentName)} · ${esc(DATA.classYear)} · ${esc(DATA.entry)}</div>
           </div>
         </div>
         <div class="as-of label">${esc(dd)} · IST · all dates render in India time</div>
