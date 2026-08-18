@@ -1,4 +1,4 @@
-# amoghcollege
+# amogh
 
 Private family planning dashboard for Amogh's Fall 2027 university applications.
 
@@ -8,7 +8,7 @@ convenient, not because it is meant to be read by anyone outside the family.
 index or train on it. Those directives are voluntary. Treat the URL as the only
 access control there is, and do not post it anywhere.
 
-Live site: https://vm4kids.github.io/amoghcollege/
+Live site: https://mailtovmat.github.io/amogh/
 
 ## Pages
 

@@ -11,6 +11,7 @@
   ];
 
   const MARK_COLOR = {Yes:"#0a0a0a", add:"#2f6feb", unsure:"#d4a017", review:"#8a8a8a"};
+  const TIER_COLOR = {Reach:"#2f6feb", Match:"#2e7d57", Safety:"#d4a017"};
   const MARK_LABEL = {Yes:"Yes", add:"add", unsure:"unsure", review:"review"};
   const C = {blue:"#4472C4", red:"#FF6B6B", amber:"#FFD966", dark:"#C00000", teal:"#0D7377", tealLt:"#E0F2F1"};
   const PLAN_WEEKS = 30;
@@ -74,9 +75,12 @@
       .split(/\s+/).filter(Boolean).map(w => w[0]).join("").slice(0,2).toUpperCase();
   }
   function ownerName(o) {
-    return o === "parent" ? "Father" : o === "amogh" ? "Amogh" : o;
+    if (o === "parent") return "Father";
+    if (o === "amogh" || o === "saanvi" || o === "student") return DATA.studentName;
+    return o;
   }
   function markColor(m) { return MARK_COLOR[m] || "#8a8a8a"; }
+  function tierColor(s) { return TIER_COLOR[s.tier] || markColor(s.mark); }
   function schoolCurrent(s) {
     if (s.parked) return {name:"UK track parked", due:null, note:"Decide by 24 Aug or it lapses"};
     if (s.mark === "add") return {name:"Resolve what “add” means (OQ-04)", due:"2026-08-31", note:"Not yet a real application"};
@@ -199,7 +203,7 @@
           </div>
           <div>
             <h1>College Application Tracker</h1>
-            <div class="label" style="margin-top:2px">${esc(DATA.studentName)} · ${esc(DATA.classYear)} · ${esc(DATA.entry)}</div>
+            <div class="label" style="margin-top:2px">${esc(DATA.studentName)} · ${esc(DATA.classYear)} · ${esc(DATA.entry)}${DATA.sibling?` · <a href="${esc(DATA.sibling.href)}">${esc(DATA.sibling.name)}</a>`:""}</div>
           </div>
         </div>
         <div class="as-of label">${esc(dd)} · IST · all dates render in India time</div>
@@ -209,7 +213,7 @@
       </nav>
       ${inner}
       <footer>
-        <div>Amogh's College Tracker · redesigned 18 Aug 2026</div>
+        <div>${esc(DATA.studentName)}'s College Tracker · redesigned 18 Aug 2026</div>
         <p>Every date marked TBD or verify is unconfirmed — a plausible wrong deadline is worse than a blank. Checkbox ticks on the old page did not save; this version is read-only against the vault. Do not post the URL.</p>
       </footer>
     </div></div>`;
@@ -225,6 +229,9 @@
     const yesUK = yes.filter(s => s.country === "UK");
     const add = schools.filter(s => s.mark === "add");
     const unsure = schools.filter(s => s.mark === "unsure");
+    const balance = schools.filter(s => s.mark === "Yes" || s.mark === "add");
+    const tiers = {Reach:0, Match:0, Safety:0};
+    balance.forEach(s => { if (tiers[s.tier] != null) tiers[s.tier]++; });
     const planDone = tasks.filter(t => t.status === "done").length;
     const planTot = tasks.length;
     const pct = Math.round(planDone / planTot * 100);
@@ -242,7 +249,7 @@
       .slice(0, 8);
 
     return `<div class="stack">
-      <div class="note"><strong>This is not a mock with invented acceptances.</strong> Nothing has been submitted. The list is a brainstorm — ${yes.length} Yes, ${add.length} add, ${unsure.length} unsure. Cutting it is the decision that makes the term possible or impossible.</div>
+      <div class="note">${DATA.notes && DATA.notes.overview ? DATA.notes.overview : ""}</div>
       <div class="kpis">${kpis.map(k => `
         <div class="kpi">
           <div class="val">${esc(k.value)}</div>
@@ -268,13 +275,13 @@
           </div>
         </div>
         <div class="card">
-          <div class="caption" style="margin-bottom:var(--s-4)">Aid category — Yes + add</div>
+          <div class="caption" style="margin-bottom:var(--s-4)">List Balance</div>
           ${bars([
-            {label:"Full-need private", value:schools.filter(s=>s.aidCat==="full-need"&&s.mark!=="unsure"&&s.mark!=="review").length, color:"var(--ink)"},
-            {label:"OOS public", value:schools.filter(s=>s.aidCat==="oos"&&s.mark!=="unsure").length, color:"var(--reach)"},
-            {label:"Merit-leaning private", value:schools.filter(s=>s.aidCat==="merit"&&s.mark!=="unsure").length, color:"var(--match)"},
-            {label:"UK international", value:yesUK.length, color:"var(--safety)"}
+            {label:"Reach", value:tiers.Reach, color:"var(--reach)"},
+            {label:"Match", value:tiers.Match, color:"var(--match)"},
+            {label:"Safety", value:tiers.Safety, color:"var(--safety)"}
           ])}
+          <div class="label" style="margin-top:12px">Yes + add only · ${balance.length} schools · working classification, not official odds</div>
         </div>
         <div class="card">
           <div class="caption" style="margin-bottom:var(--s-4)">Tracked work</div>
@@ -364,10 +371,11 @@
   }
 
   function renderApplications(schools) {
-    const filters = ["All","Yes","add","unsure","US","UK","Planning","Parked"];
+    const filters = ["All","Reach","Match","Safety","Yes","add","unsure","US","UK","Planning","Parked"];
     const list = schools.filter(s => {
       const f = state.filter;
       if (f === "All") return true;
+      if (f === "Reach" || f === "Match" || f === "Safety") return s.tier === f;
       if (f === "Yes" || f === "add" || f === "unsure") return s.mark === f;
       if (f === "US" || f === "UK") return s.country === f;
       if (f === "Planning") return s.status === "Planning";
@@ -375,7 +383,7 @@
       return true;
     });
     return `<div class="stack">
-      <div class="note"><strong>16 Yes is still a brainstorm if the 13 add stay.</strong> Boston University is on the Excel as add and was missing from the previous dashboard. Northwestern is not an Amogh Yes — see OQ-05.</div>
+      <div class="note">${DATA.notes && DATA.notes.applications ? DATA.notes.applications : ""}</div>
       <div class="card">
         <div class="card-head">
           <h2>Applications</h2>
@@ -394,15 +402,15 @@
           const dueBit = cur.due ? `Due ${dateLabel(cur.due)} · ${relLabel(daysUntil(cur.due))}` : (cur.note || "");
           return `<div class="listrow${s.parked?" dim":""}">
             <div style="flex:0 0 210px;min-width:170px">
-              <div style="font-weight:700;font-size:15px"><span class="dot" style="background:${markColor(s.mark)}"></span>${esc(s.name)}</div>
-              <div class="label">${esc(s.mark)} · ${esc(s.sys)} · ${esc(s.loc)}</div>
+              <div style="font-weight:700;font-size:15px"><span class="dot" style="background:${tierColor(s)}"></span>${esc(s.name)}</div>
+              <div class="label">${esc(s.tier||s.mark)} · ${esc(s.sys)} · ${esc(s.loc)}</div>
             </div>
             <div class="grow" style="min-width:180px">
               <div style="font-weight:600;font-size:14px">${esc(cur.name)}</div>
               <div class="label">${esc(dueBit)}</div>
             </div>
             <div style="flex:0 0 150px;min-width:130px">
-              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:${s._pct}%;background:${markColor(s.mark)}"></div></div>
+              <div class="bar-track" style="height:8px"><div class="bar-fill" style="width:${s._pct}%;background:${tierColor(s)}"></div></div>
               <div class="label" style="margin-top:4px">${s._done}/${s._total} complete</div>
             </div>
             <div style="flex:0 0 96px;text-align:right">
@@ -415,13 +423,14 @@
         <div class="card-head"><h2>School list detail</h2><span class="label">${list.length} shown</span></div>
         <div class="tbwrap"><table>
           <thead><tr>
-            <th class="caption">School</th><th class="caption">Mark</th><th class="caption">System</th>
+            <th class="caption">School</th><th class="caption">Mark</th><th class="caption">Tier</th><th class="caption">System</th>
             <th class="caption">ChemE</th><th class="caption">Aero/Mech</th>
             <th class="caption">Test</th><th class="caption">Aid</th><th class="caption">Deadline</th>
           </tr></thead>
           <tbody>${list.map(s => `<tr${s.parked?' class="dim"':""}>
             <td><div style="font-weight:600">${esc(s.name)}</div><div class="label">${esc(s.loc)}${s.note?" · "+esc(s.note):""}</div></td>
             <td><span class="badge ${s.mark==="Yes"?"badge-ink":s.mark==="add"?"badge-soon":"badge-ghost"}">${esc(s.mark)}</span></td>
+            <td><span class="dot" style="background:${tierColor(s)}"></span>${esc(s.tier||"—")}</td>
             <td>${esc(s.sys)}</td>
             <td class="num">${s.ce ?? "—"}</td>
             <td class="num">${s.am ?? "—"}</td>
@@ -526,12 +535,12 @@
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div>
-              <h3><span class="dot" style="background:${markColor(s.mark)}"></span>${esc(s.name)}</h3>
-              <div class="label">${esc(s.status)} · ${esc(s.sys)}</div>
+              <h3><span class="dot" style="background:${tierColor(s)}"></span>${esc(s.name)}</h3>
+              <div class="label">${esc(s.tier||"")} · ${esc(s.status)} · ${esc(s.sys)}</div>
             </div>
             <div style="font-family:var(--font-display);font-weight:800;font-size:26px;line-height:1">${s._pct}%</div>
           </div>
-          <div class="bar-track" style="height:8px;margin:12px 0 16px"><div class="bar-fill" style="width:${s._pct}%;background:${s.parked?"var(--n-400)":"var(--ink)"}"></div></div>
+          <div class="bar-track" style="height:8px;margin:12px 0 16px"><div class="bar-fill" style="width:${s._pct}%;background:${s.parked?"var(--n-400)":tierColor(s)}"></div></div>
           <div style="display:flex;flex-direction:column;gap:8px">
             ${s._deliv.map(d => `
               <div class="ms">
