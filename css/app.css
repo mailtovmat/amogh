@@ -315,7 +315,7 @@ footer p { margin-top: 8px; text-transform: none; letter-spacing: 0; font-weight
 @media (max-width: 720px) {
   .page { padding: 16px 12px 48px; }
   h1 { font-size: 22px; }
-  .today-line { text-align: left; }
+  .as-of { text-align: left; }
   .kpi .val { font-size: 30px; }
   .cal-cell { min-height: 64px; }
   .daybox { width: 36px; }
