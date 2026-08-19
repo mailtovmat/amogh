@@ -262,7 +262,8 @@
   function sheetOwner(v) {
     const s = String(v || "").trim().toLowerCase();
     if (!s) return null;
-    if (s === "saanvi" || s === "student" || s === "amogh") return "saanvi";
+    if (s === "amogh" || s === "student") return "amogh";
+    if (s === "saanvi") return "saanvi";
     if (s === "father" || s === "parent" || s === "dad" || s === "mother" || s === "mum" || s === "mom") return "parent";
     return s;
   }
@@ -1202,11 +1203,19 @@
     </div>`;
   }
 
+  function sortDocsByDue(docs) {
+    return (docs || []).slice().sort((a, b) => {
+      if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+      if (a.due && !b.due) return -1;
+      if (!a.due && b.due) return 1;
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+  }
   function renderDocs() {
-    const docs = DATA.docs || [];
+    const docs = sortDocsByDue(DATA.docs || []);
     const avg = docs.length ? Math.round(docs.reduce((s,d)=>s+(d.pct==null?(d.done?100:0):d.pct),0)/docs.length) : 0;
     return `<div class="stack">
-      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on amogh-application-plan.</div>
+      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on amogh-application-plan. Listed earliest due date first; items with no date are at the bottom.</div>
       <div class="kpis">
         <div class="kpi">
           <div class="val">${avg}<span class="unit">%</span></div>
@@ -1217,7 +1226,7 @@
       <div class="card">
         <div class="card-head">
           <h2>Docs-status</h2>
-          <span class="label">Each item’s %</span>
+          <span class="label">Earliest due first</span>
         </div>
         ${docs.map(d => {
           const pct = d.pct == null ? (d.done ? 100 : 0) : d.pct;
@@ -1233,7 +1242,10 @@
               </div>
               <div class="label">${esc(d.kind)} · ${esc(d.note||"")}</div>
             </div>
-            <span class="${b.cls}">${esc(b.rel)}</span>
+            <div style="text-align:right;white-space:nowrap">
+              <div class="label">${d.due ? fmt(d.due) : "No date"}</div>
+              <span class="${b.cls}">${esc(b.rel)}</span>
+            </div>
           </div>`;
         }).join("")}
       </div>
