@@ -534,7 +534,7 @@
       ]);
       if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
         throw new Error((taskRes.reason && taskRes.reason.message) ||
-          (docRes.reason && docRes.reason.message) || "Could not read application-plan.");
+          (docRes.reason && docRes.reason.message) || "Could not read amogh-application-plan.");
       }
       const tasks = tasksFromSheet(tableRows(taskRes.value));
       const docs = docsFromSheet(tableRows(docRes.value));
@@ -545,7 +545,7 @@
         when: planWhenLabel(),
         tasks: tasks.length,
         docs: docs.length,
-        source: "application-plan"
+        source: "amogh-application-plan"
       };
       applyPlan(tasks, docs, meta);
       savePlanCache(tasks, docs, meta);
@@ -566,7 +566,7 @@
   }
   function refreshBanner() {
     if (state.refreshErr) {
-      return `<div class="refresh-status is-err" role="status">Refresh failed: ${esc(state.refreshErr)} The <a href="${esc(PLAN.editUrl)}" target="_blank" rel="noopener noreferrer">application-plan</a> file must stay shared as <em>Anyone with the link can view</em>.</div>`;
+      return `<div class="refresh-status is-err" role="status">Refresh failed: ${esc(state.refreshErr)} The <a href="${esc(PLAN.editUrl)}" target="_blank" rel="noopener noreferrer">amogh-application-plan</a> file must stay shared as <em>Anyone with the link can view</em>.</div>`;
     }
     if (state.planMeta) {
       const driveBit = state.planMeta.drive != null ? ` · Drive ${state.planMeta.drive} files` : "";
@@ -593,7 +593,7 @@
       </header>
       <nav class="tabs" aria-label="Sections">
         ${PAGES.map(p => `<a class="tabbtn" href="${p.href}" ${p.id===state.page?'aria-current="page"':""}>${p.label}</a>`).join("")}
-        <button type="button" class="tabbtn refresh-btn" data-refresh ${state.refreshing?'aria-busy="true"':""} title="Reload Tasks and Documents Needed from the application-plan spreadsheet">${state.refreshing?"Refreshing…":"Refresh"}</button>
+        <button type="button" class="tabbtn refresh-btn" data-refresh ${state.refreshing?'aria-busy="true"':""} title="Reload Tasks and Documents Needed from amogh-application-plan">${state.refreshing?"Refreshing…":"Refresh"}</button>
       </nav>
       ${refreshBanner()}
       ${inner}
@@ -700,7 +700,7 @@
       </div>`;
     }
     return `
-      <div class="note">Due-by lists come from the <strong>application-plan</strong> spreadsheet: <em>Tasks</em> and <em>documents needed</em>.</div>
+      <div class="note">Due-by lists come from the <strong>amogh-application-plan</strong> spreadsheet: <em>Tasks</em> and <em>documents needed</em>.</div>
       ${block("Overdue", "past due", over)}
       ${block("This week", "due in 0–7 days", thisWeek)}
       ${block("Next week", "due in 8–14 days", nextWeek)}
@@ -1065,7 +1065,7 @@
     const months = [7,8,9,10,11]; // Aug–Dec 2026
     return `<div class="stack">
       ${renderLaneTimeline()}
-      <div class="note">Date cells stay one size. Click a day that has text to read it above the months, then <strong>Close</strong> to go back to the calendar. Vault tasks also live on the <strong>Tasks</strong> tab of the application-plan spreadsheet.</div>
+      <div class="note">Date cells stay one size. Click a day that has text to read it above the months, then <strong>Close</strong> to go back to the calendar. Vault tasks also live on the <strong>Tasks</strong> tab of amogh-application-plan.</div>
       ${renderDayDetail()}
       ${months.map(m => {
         const label = new Date(2026, m, 1).toLocaleDateString("en-US",{month:"long", year:"numeric"});
@@ -1129,7 +1129,7 @@
     const docs = DATA.docs || [];
     const avg = docs.length ? Math.round(docs.reduce((s,d)=>s+(d.pct==null?(d.done?100:0):d.pct),0)/docs.length) : 0;
     return `<div class="stack">
-      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on the application-plan spreadsheet.</div>
+      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on amogh-application-plan.</div>
       <div class="kpis">
         <div class="kpi">
           <div class="val">${avg}<span class="unit">%</span></div>
