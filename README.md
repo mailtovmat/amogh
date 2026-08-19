@@ -12,14 +12,14 @@ Live site: https://mailtovmat.github.io/amogh/
 
 Tabs: Dashboard · Progress · Calendar · Docs-status · G-Drive · Universities · Financial Aid · People.
 
-Every page load, browser refresh, and the blue **Refresh** button reloads **Tasks** and **Documents Needed** from **amogh-application-plan**, and rebuilds the G-Drive file tree from the live vault (markdown notes stay hidden). Universities, aid, people, and the gantt still come from the committed JS files.
+Every page load, browser refresh, and the blue **Refresh** button reloads **Tasks** and **Documents Needed** from the plan spreadsheet (file id in `js/app.js`, currently named **am-application-plan**). Do not rename the Drive file from code — Refresh uses the id, not the name. Universities, aid, people, and the gantt still come from the committed JS files.
 
 Sources: `C:\Amogh-Saanvi-College\AMOGH-DASHBOARD-SOURCES.md`  
 Setup (what you still have to click): `C:\Amogh-Saanvi-College\AMOGH-SETUP.md`
 
 ## Editing
 
-The live due-by lists come from [amogh-application-plan](https://docs.google.com/spreadsheets/d/1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy/edit). Edit Tasks / Documents Needed there, then Refresh.
+The live due-by lists come from [am-application-plan](https://docs.google.com/spreadsheets/d/1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy/edit). Edit Tasks / Documents Needed there, then Refresh. The site follows this file id even if you rename the workbook.
 
 `PUBLIC = true` in `js/data.js` hides the SAT score and the Financial Aid page content.
 

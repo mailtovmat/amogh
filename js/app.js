@@ -23,11 +23,12 @@
   const T1 = parse("2027-04-01");
   const PLAN = {
     fileId: "1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy",
+    fileName: "am-application-plan",
     editUrl: "https://docs.google.com/spreadsheets/d/1wBEKPcSzR4uXTwoTKSH_U2THZFg8M-oy/edit",
     tasksSheet: "Tasks",
     docsSheet: "Documents Needed",
     cacheKey: "amogh.plan.v1",
-    driveCacheKey: "amogh.gdrive.v3",
+    driveCacheKey: "amogh.gdrive.v4",
     driveRoot: "1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
     driveHref: "https://drive.google.com/drive/folders/1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
     apiUrl: ""
@@ -598,7 +599,7 @@
       tasks: (payload.tasks || []).length,
       docs: (payload.docs || []).length,
       drive: payload.gdrive ? payload.gdrive.fileCount : undefined,
-      source: "amogh-application-plan"
+      source: PLAN.fileName
     };
     state.planMeta = meta;
     savePlanCache(DATA.tasks, DATA.docs, meta);
@@ -627,7 +628,7 @@
         ]);
         if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
           throw new Error((taskRes.reason && taskRes.reason.message) ||
-            (docRes.reason && docRes.reason.message) || "Could not read amogh-application-plan.");
+            (docRes.reason && docRes.reason.message) || "Could not read " + PLAN.fileName + ".");
         }
         const tasks = tasksFromSheet(tableRows(taskRes.value));
         const docs = docsFromSheet(tableRows(docRes.value));
@@ -639,7 +640,7 @@
           tasks: tasks.length,
           docs: docs.length,
           drive: state.gdrive ? state.gdrive.fileCount : (typeof GDRIVE !== "undefined" ? GDRIVE.fileCount : undefined),
-          source: "amogh-application-plan"
+          source: PLAN.fileName
         };
         applyPlan(tasks, docs, meta);
         savePlanCache(tasks, docs, meta);
@@ -787,7 +788,7 @@
       </div>`;
     }
     return `
-      <div class="note">Due-by lists come from the <strong>amogh-application-plan</strong> spreadsheet: <em>Tasks</em> and <em>documents needed</em>.</div>
+      <div class="note">Due-by lists come from the <strong>${esc(PLAN.fileName)}</strong> spreadsheet: <em>Tasks</em> and <em>documents needed</em>.</div>
       ${block("Overdue", "past due", over)}
       ${block("This week", "due in 0–7 days", thisWeek)}
       ${block("Next week", "due in 8–14 days", nextWeek)}
@@ -1157,7 +1158,7 @@
     const months = [7,8,9,10,11]; // Aug–Dec 2026
     return `<div class="stack">
       ${renderLaneTimeline()}
-      <div class="note">Date cells stay one size. Click a day that has text to read it above the months, then <strong>Close</strong> to go back to the calendar. Vault tasks also live on the <strong>Tasks</strong> tab of amogh-application-plan.</div>
+      <div class="note">Date cells stay one size. Click a day that has text to read it above the months, then <strong>Close</strong> to go back to the calendar. Vault tasks also live on the <strong>Tasks</strong> tab of ${esc(PLAN.fileName)}.</div>
       ${renderDayDetail()}
       ${months.map(m => {
         const label = new Date(2026, m, 1).toLocaleDateString("en-US",{month:"long", year:"numeric"});
@@ -1229,7 +1230,7 @@
     const docs = sortDocsByDue(DATA.docs || []);
     const avg = docs.length ? Math.round(docs.reduce((s,d)=>s+(d.pct==null?(d.done?100:0):d.pct),0)/docs.length) : 0;
     return `<div class="stack">
-      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on amogh-application-plan. Listed earliest due date first; items with no date are at the bottom.</div>
+      <div class="note">Progress % comes from the <strong>documents needed</strong> tab on ${esc(PLAN.fileName)}. Listed earliest due date first; items with no date are at the bottom.</div>
       <div class="kpis">
         <div class="kpi">
           <div class="val">${avg}<span class="unit">%</span></div>
