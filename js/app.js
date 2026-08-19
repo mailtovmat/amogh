@@ -29,7 +29,8 @@
     cacheKey: "amogh.plan.v1",
     driveCacheKey: "amogh.gdrive.v1",
     driveRoot: "1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
-    driveHref: "https://drive.google.com/drive/folders/1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd"
+    driveHref: "https://drive.google.com/drive/folders/1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
+    apiUrl: ""
   };
 
   const state = {
@@ -513,6 +514,51 @@
       tree
     };
   }
+  function fetchRefreshApi() {
+    return new Promise(function (resolve, reject) {
+      const cb = "amoghRefresh_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+      const script = document.createElement("script");
+      const timer = setTimeout(function () {
+        cleanup();
+        reject(new Error("Timed out talking to the family Refresh API."));
+      }, 25000);
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cb]; } catch (e) { window[cb] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cb] = function (resp) {
+        cleanup();
+        if (!resp || !resp.tasks) {
+          reject(new Error("Refresh API returned no plan data."));
+          return;
+        }
+        resolve(resp);
+      };
+      script.onerror = function () {
+        cleanup();
+        reject(new Error("Could not reach the family Refresh API."));
+      };
+      const join = PLAN.apiUrl.indexOf("?") >= 0 ? "&" : "?";
+      script.src = PLAN.apiUrl + join + "callback=" + cb;
+      document.head.appendChild(script);
+    });
+  }
+  function applyApiPayload(payload) {
+    if (payload.tasks && payload.tasks.length) DATA.tasks = payload.tasks;
+    if (payload.docs && payload.docs.length) DATA.docs = payload.docs;
+    if (payload.gdrive && payload.gdrive.tree) applyDrive(payload.gdrive);
+    const meta = {
+      when: payload.when || planWhenLabel(),
+      tasks: (payload.tasks || []).length,
+      docs: (payload.docs || []).length,
+      drive: payload.gdrive ? payload.gdrive.fileCount : undefined,
+      source: "amogh-application-plan"
+    };
+    state.planMeta = meta;
+    savePlanCache(DATA.tasks, DATA.docs, meta);
+    if (payload.gdrive) saveDriveCache(payload.gdrive);
+  }
   function planWhenLabel() {
     return new Intl.DateTimeFormat("en-GB", {
       timeZone: DATA.tz, day: "numeric", month: "short", year: "numeric",
@@ -527,35 +573,30 @@
     const btn = document.querySelector("[data-refresh]");
     if (btn) { btn.setAttribute("aria-busy", "true"); btn.textContent = "Refreshing…"; }
     try {
-      const [taskRes, docRes, driveRes] = await Promise.allSettled([
-        gvizTable(PLAN.tasksSheet),
-        gvizTable(PLAN.docsSheet),
-        fetchDriveListing()
-      ]);
-      if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
-        throw new Error((taskRes.reason && taskRes.reason.message) ||
-          (docRes.reason && docRes.reason.message) || "Could not read amogh-application-plan.");
-      }
-      const tasks = tasksFromSheet(tableRows(taskRes.value));
-      const docs = docsFromSheet(tableRows(docRes.value));
-      if (!tasks.length && !docs.length) {
-        throw new Error("The Tasks and Documents Needed tabs came back empty. Nothing was changed.");
-      }
-      const meta = {
-        when: planWhenLabel(),
-        tasks: tasks.length,
-        docs: docs.length,
-        source: "amogh-application-plan"
-      };
-      applyPlan(tasks, docs, meta);
-      savePlanCache(tasks, docs, meta);
-      if (driveRes.status === "fulfilled") {
-        applyDrive(driveRes.value);
-        saveDriveCache(driveRes.value);
-        meta.drive = driveRes.value.fileCount;
-        state.planMeta = meta;
-      } else if (!state.gdrive && typeof GDRIVE === "undefined") {
-        state.refreshErr = (driveRes.reason && driveRes.reason.message) || "Drive listing could not be refreshed.";
+      if (PLAN.apiUrl) {
+        applyApiPayload(await fetchRefreshApi());
+      } else {
+        const [taskRes, docRes] = await Promise.allSettled([
+          gvizTable(PLAN.tasksSheet),
+          gvizTable(PLAN.docsSheet)
+        ]);
+        if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
+          throw new Error((taskRes.reason && taskRes.reason.message) ||
+            (docRes.reason && docRes.reason.message) || "Could not read amogh-application-plan.");
+        }
+        const tasks = tasksFromSheet(tableRows(taskRes.value));
+        const docs = docsFromSheet(tableRows(docRes.value));
+        if (!tasks.length && !docs.length) {
+          throw new Error("The Tasks and Documents Needed tabs came back empty. Nothing was changed.");
+        }
+        const meta = {
+          when: planWhenLabel(),
+          tasks: tasks.length,
+          docs: docs.length,
+          source: "amogh-application-plan"
+        };
+        applyPlan(tasks, docs, meta);
+        savePlanCache(tasks, docs, meta);
       }
     } catch (err) {
       state.refreshErr = (err && err.message) || "Refresh failed.";
@@ -566,7 +607,7 @@
   }
   function refreshBanner() {
     if (state.refreshErr) {
-      return `<div class="refresh-status is-err" role="status">Refresh failed: ${esc(state.refreshErr)} The <a href="${esc(PLAN.editUrl)}" target="_blank" rel="noopener noreferrer">amogh-application-plan</a> file must stay shared as <em>Anyone with the link can view</em>.</div>`;
+      return `<div class="refresh-status is-err" role="status">Refresh failed: ${esc(state.refreshErr)}</div>`;
     }
     if (state.planMeta) {
       const driveBit = state.planMeta.drive != null ? ` · Drive ${state.planMeta.drive} files` : "";
