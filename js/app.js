@@ -14,7 +14,7 @@
   const MARK_COLOR = {Yes:"#0a0a0a", add:"#2f6feb", unsure:"#d4a017", review:"#8a8a8a"};
   const TIER_COLOR = {Reach:"#2f6feb", Match:"#2e7d57", Safety:"#d4a017"};
   const MARK_LABEL = {Yes:"Yes", add:"add", unsure:"unsure", review:"review"};
-  const C = {blue:"#4472C4", red:"#FF6B6B", amber:"#FFD966", dark:"#C00000", teal:"#0D7377", tealLt:"#E0F2F1"};
+  const C = {blue:"#4472C4", red:"#FF6B6B", amber:"#FFD966", dark:"#C00000", teal:"#0D7377", tealLt:"#E0F2F1", pink:"#FFC0CB"};
   const PLAN_WEEKS = 30;
   const PLAN_BASE = parse("2026-08-10");
   const FREEZE = [5,6,7,8,9,10,11,12];
@@ -909,7 +909,11 @@
         let col = null, content = "";
         if (r.type === "section") col = C.tealLt;
         else if (r.type === "period") {
-          if ((r.red||[]).includes(w)) col = C.red;
+          if ((r.pink||[]).includes(w)) {
+            col = C.pink;
+            if (r.pinkLabel && r.pinkLabel[w]) content = r.pinkLabel[w];
+          }
+          else if ((r.red||[]).includes(w)) col = C.red;
           else if ((r.amber||[]).includes(w)) col = C.amber;
         } else {
           if ((r.dark||[]).includes(w)) { col = C.dark; if (w === Math.min(...r.dark)) content = "★"; }
@@ -954,6 +958,7 @@
         <div class="legend-inline">
           <span class="label"><span style="width:14px;height:12px;border-radius:2px;background:#4472C4;display:inline-block"></span> Scheduled work</span>
           <span class="label"><span style="width:14px;height:12px;border-radius:2px;background:#FF6B6B;display:inline-block"></span> Exam freeze</span>
+          <span class="label"><span style="width:14px;height:12px;border-radius:2px;background:#FFC0CB;display:inline-block"></span> Extra exams</span>
           <span class="label"><span style="width:14px;height:12px;border-radius:2px;background:#FFD966;display:inline-block"></span> School break</span>
           <span class="label"><span style="width:14px;height:12px;border-radius:2px;background:#C00000;display:inline-block"></span> ★ Submit target</span>
           <span class="label"><span style="width:2px;height:14px;background:var(--ink);display:inline-block"></span> Today</span>
