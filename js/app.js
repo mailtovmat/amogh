@@ -398,7 +398,10 @@
       const raw = localStorage.getItem(PLAN.driveCacheKey);
       if (!raw) return;
       const c = JSON.parse(raw);
-      if (c && Array.isArray(c.tree)) applyDrive(c);
+      if (!c || !Array.isArray(c.tree)) return;
+      const shipped = (typeof GDRIVE !== "undefined") ? GDRIVE : null;
+      if (shipped && shipped.fetchedIso && (!c.fetchedIso || c.fetchedIso < shipped.fetchedIso)) return;
+      applyDrive(c);
     } catch (e) { /* keep shipped gdrive-data.js */ }
   }
   function saveDriveCache(payload) {
@@ -478,10 +481,20 @@
     await Promise.all(Array.from({ length: items.length ? n : 0 }, worker));
     return out;
   }
-  async function walkDriveFolder(folderId, seen) {
+  async function walkDriveFolder(folderId, seen, required) {
     if (seen.has(folderId)) return [];
     seen.add(folderId);
-    const items = parseDriveFolderPage(await fetchDriveFolderText(folderId));
+    let text;
+    try {
+      text = await fetchDriveFolderText(folderId);
+    } catch (e) {
+      if (required) throw e;
+      return [];
+    }
+    const items = parseDriveFolderPage(text);
+    if (required && !items.length) {
+      throw new Error("Could not read the Amogh Drive folder listing.");
+    }
     const files = [];
     const folders = [];
     items.forEach(item => {
@@ -490,7 +503,7 @@
       else if (!item.folder) files.push(Object.assign({}, item, { children: [] }));
     });
     const nested = await mapPool(folders, 4, async folder => {
-      const children = await walkDriveFolder(folder.id, seen);
+      const children = await walkDriveFolder(folder.id, seen, false);
       if (!children.length) return null;
       return {
         name: folder.name, kind: "Folder", folder: true,
@@ -505,11 +518,12 @@
     return (nodes || []).reduce((n, node) => n + (node.folder ? countDriveFiles(node.children) : 1), 0);
   }
   async function fetchDriveListing() {
-    const tree = await walkDriveFolder(PLAN.driveRoot, new Set());
+    const tree = await walkDriveFolder(PLAN.driveRoot, new Set(), true);
     return {
       rootName: "Amogh",
       rootHref: PLAN.driveHref,
       fetched: planWhenLabel(),
+      fetchedIso: new Date().toISOString(),
       fileCount: countDriveFiles(tree),
       tree
     };
@@ -576,10 +590,15 @@
       if (PLAN.apiUrl) {
         applyApiPayload(await fetchRefreshApi());
       } else {
-        const [taskRes, docRes] = await Promise.allSettled([
+        const [taskRes, docRes, driveRes] = await Promise.allSettled([
           gvizTable(PLAN.tasksSheet),
-          gvizTable(PLAN.docsSheet)
+          gvizTable(PLAN.docsSheet),
+          fetchDriveListing()
         ]);
+        if (driveRes.status === "fulfilled" && driveRes.value && Array.isArray(driveRes.value.tree)) {
+          applyDrive(driveRes.value);
+          saveDriveCache(driveRes.value);
+        }
         if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
           throw new Error((taskRes.reason && taskRes.reason.message) ||
             (docRes.reason && docRes.reason.message) || "Could not read amogh-application-plan.");
@@ -593,6 +612,7 @@
           when: planWhenLabel(),
           tasks: tasks.length,
           docs: docs.length,
+          drive: (driveRes.status === "fulfilled" && driveRes.value) ? driveRes.value.fileCount : undefined,
           source: "amogh-application-plan"
         };
         applyPlan(tasks, docs, meta);
@@ -634,7 +654,7 @@
       </header>
       <nav class="tabs" aria-label="Sections">
         ${PAGES.map(p => `<a class="tabbtn" href="${p.href}" ${p.id===state.page?'aria-current="page"':""}>${p.label}</a>`).join("")}
-        <button type="button" class="tabbtn refresh-btn" data-refresh ${state.refreshing?'aria-busy="true"':""} title="Reload Tasks and Documents Needed from amogh-application-plan">${state.refreshing?"Refreshing…":"Refresh"}</button>
+        <button type="button" class="tabbtn refresh-btn" data-refresh ${state.refreshing?'aria-busy="true"':""} title="Reload Tasks, Documents Needed, and the G-Drive listing">${state.refreshing?"Refreshing…":"Refresh"}</button>
       </nav>
       ${refreshBanner()}
       ${inner}
@@ -1229,11 +1249,11 @@
   function renderGdrive() {
     const G = state.gdrive || ((typeof GDRIVE !== "undefined") ? GDRIVE : {tree:[], fileCount:0, fetched:"—", rootHref:PLAN.driveHref, rootName:"Amogh"});
     return `<div class="stack">
-      <div class="note">Listing of the Amogh Google Drive vault. Markdown notes are hidden. Updated ${esc(G.fetched)}. <a href="${esc(G.rootHref || PLAN.driveHref)}" target="_blank" rel="noopener noreferrer">Open the folder in Drive</a>.</div>
+      <div class="note">Listing of the Amogh Google Drive vault. Markdown notes are hidden, so deleting a .md file will not change this list. Refresh re-reads the folder. Updated ${esc(G.fetched)}. <a href="${esc(G.rootHref || PLAN.driveHref)}" target="_blank" rel="noopener noreferrer">Open the folder in Drive</a>.</div>
       <div class="card">
         <div class="card-head">
           <h2>G-Drive</h2>
-          <span class="label">${G.fileCount} file${G.fileCount===1?"":"s"} · folders shown only when they hold a visible file</span>
+          <span class="label">${G.fileCount} file${G.fileCount===1?"":"s"} · markdown hidden · folders shown only when they hold a visible file</span>
         </div>
         <div class="drive-head">
           <div class="caption">Name</div>
