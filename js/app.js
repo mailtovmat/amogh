@@ -27,7 +27,7 @@
     tasksSheet: "Tasks",
     docsSheet: "Documents Needed",
     cacheKey: "amogh.plan.v1",
-    driveCacheKey: "amogh.gdrive.v1",
+    driveCacheKey: "amogh.gdrive.v2",
     driveRoot: "1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
     driveHref: "https://drive.google.com/drive/folders/1AV_s7np50h1CBPhRXMm3715mOnRvr5Zd",
     apiUrl: ""
@@ -408,7 +408,12 @@
     } catch (e) { /* private mode / quota */ }
   }
   function applyDrive(payload) {
-    if (payload && Array.isArray(payload.tree)) state.gdrive = payload;
+    if (!payload || !Array.isArray(payload.tree)) return;
+    const incoming = countDriveFiles(payload.tree);
+    const current = state.gdrive || ((typeof GDRIVE !== "undefined") ? GDRIVE : null);
+    const have = current ? countDriveFiles(current.tree) : 0;
+    if (incoming === 0 && have > 0) return;
+    state.gdrive = payload;
   }
   function loadDriveCache() {
     try {
@@ -417,6 +422,7 @@
       const c = JSON.parse(raw);
       if (!c || !Array.isArray(c.tree)) return;
       const shipped = (typeof GDRIVE !== "undefined") ? GDRIVE : null;
+      if (shipped && countDriveFiles(shipped.tree) > 0 && countDriveFiles(c.tree) === 0) return;
       if (shipped && shipped.fetchedIso && (!c.fetchedIso || c.fetchedIso < shipped.fetchedIso)) return;
       applyDrive(c);
     } catch (e) { /* keep shipped gdrive-data.js */ }
@@ -578,7 +584,7 @@
   function applyApiPayload(payload) {
     if (payload.tasks && payload.tasks.length) DATA.tasks = payload.tasks;
     if (payload.docs && payload.docs.length) DATA.docs = payload.docs;
-    if (payload.gdrive && payload.gdrive.tree) applyDrive(payload.gdrive);
+    if (payload.gdrive && Array.isArray(payload.gdrive.tree)) applyDrive(payload.gdrive);
     const meta = {
       when: payload.when || planWhenLabel(),
       tasks: (payload.tasks || []).length,
@@ -588,7 +594,7 @@
     };
     state.planMeta = meta;
     savePlanCache(DATA.tasks, DATA.docs, meta);
-    if (payload.gdrive) saveDriveCache(payload.gdrive);
+    if (payload.gdrive && countDriveFiles(payload.gdrive.tree) > 0) saveDriveCache(payload.gdrive);
   }
   function planWhenLabel() {
     return new Intl.DateTimeFormat("en-GB", {
@@ -614,7 +620,7 @@
         ]);
         if (driveRes.status === "fulfilled" && driveRes.value && Array.isArray(driveRes.value.tree)) {
           applyDrive(driveRes.value);
-          saveDriveCache(driveRes.value);
+          if (countDriveFiles(driveRes.value.tree) > 0) saveDriveCache(driveRes.value);
         }
         if (taskRes.status !== "fulfilled" || docRes.status !== "fulfilled") {
           throw new Error((taskRes.reason && taskRes.reason.message) ||
@@ -1275,7 +1281,11 @@
   }
 
   function renderGdrive() {
-    const G = state.gdrive || ((typeof GDRIVE !== "undefined") ? GDRIVE : {tree:[], fileCount:0, fetched:"—", rootHref:PLAN.driveHref, rootName:"Amogh"});
+    const shipped = (typeof GDRIVE !== "undefined") ? GDRIVE : null;
+    const live = state.gdrive;
+    const G = (live && countDriveFiles(live.tree) > 0) ? live
+      : (shipped && countDriveFiles(shipped.tree) > 0) ? shipped
+      : (live || shipped || {tree:[], fileCount:0, fetched:"—", rootHref:PLAN.driveHref, rootName:"Amogh"});
     return `<div class="stack">
       <div class="note">Listing of the Amogh Google Drive vault. Markdown notes are hidden, so deleting a .md file will not change this list. Refresh re-reads the folder. Updated ${esc(G.fetched)}. <a href="${esc(G.rootHref || PLAN.driveHref)}" target="_blank" rel="noopener noreferrer">Open the folder in Drive</a>.</div>
       <div class="card">
